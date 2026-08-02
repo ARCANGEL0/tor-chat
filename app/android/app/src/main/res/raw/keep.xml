@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resources referenced only by NAME at runtime (flutter_local_notifications
+  looks up the notification icon and sound via getIdentifier), so R8 resource
+  shrinking would otherwise strip them from release builds.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_onionchat,@raw/notification" />

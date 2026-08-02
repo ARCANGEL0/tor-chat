@@ -1,0 +1,65 @@
+group = "com.example.tor_hidden_service"
+version = "1.0-SNAPSHOT"
+
+buildscript {
+    ext.kotlin_version = "1.8.22" // Updated to a compatible version
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // The tools that build Android apps
+        classpath "com.android.tools.build:gradle:7.3.0"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+// This allows the plugin to find the Guardian Project binaries
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://raw.githubusercontent.com/guardianproject/gpmaven/master" }
+    }
+}
+
+// --- CRITICAL PLUGINS ---
+apply plugin: "com.android.library" // This enables the android() block
+apply plugin: "kotlin-android"
+
+android {
+    // This namespace is required for newer Android builds
+    namespace "com.example.tor_hidden_service"
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 21
+    }
+
+    // --- FIX FOR JVM TARGET ERROR ---
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    // --------------------------------
+
+    // Prevents stripping the Tor binary
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "androidx.core:core-ktx:1.12.0"
+
+    // The Tor Binaries
+    implementation 'info.guardianproject:tor-android:0.4.8.7'
+    implementation 'info.guardianproject:jtorctl:0.4.5.7'
+}

@@ -1,0 +1,49 @@
+name: onionchat_mobile
+description: "OnionChat Mobile - Anonymous P2P chat via Tor hidden services."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  tor_hidden_service:
+    path: plugins/tor_hidden_service
+  shared_preferences: ^2.3.0
+  flutter_animate: ^4.5.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.1
+  pointycastle: ^4.0.0
+  cryptography: ^2.7.0
+  crypto: ^3.0.3
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
+  flutter_colorpicker: ^1.1.0
+  file_picker: ^8.1.2
+  flutter_local_notifications: ^19.3.0
+  audioplayers: ^6.5.1
+  url_launcher: ^6.3.2
+  package_info_plus: ^8.3.0
+  crop_your_image: ^2.0.0
+  video_player: ^2.13.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon.png
+    - assets/wallpapers/
+    - assets/chats/
+    - assets/pfp/
+    - assets/sounds/
