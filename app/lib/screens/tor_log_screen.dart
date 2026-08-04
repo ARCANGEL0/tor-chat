@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/tor_engine.dart';
+import '../widgets/app_toast.dart';
 
 /// Shows the Tor daemon's log from the current run, live-updated.
 class TorLogScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _TorLogScreenState extends State<TorLogScreen> {
   final List<String> _lines = [];
   StreamSubscription<String>? _sub;
   bool _loading = true;
+  bool _restarting = false;
 
   @override
   void initState() {
@@ -38,6 +40,44 @@ class _TorLogScreenState extends State<TorLogScreen> {
         ..addAll((text ?? '').split('\n').where((l) => l.isNotEmpty));
       _loading = false;
     });
+  }
+
+  Future<void> _restartTor() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restart Tor?'),
+        content: const Text(
+          'This will stop and restart the Tor daemon. '
+          'All active connections will be temporarily interrupted. '
+          'Hosted rooms will come back automatically; joined rooms will reconnect.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Restart'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _restarting = true);
+    try {
+      await TorEngine.instance.restart();
+      if (!mounted) return;
+      AppToast.show(context, 'Tor restarted successfully');
+      await _load(); // Refresh logs after restart
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.show(context, 'Failed to restart Tor: $e', style: AppToastStyle.error);
+    } finally {
+      if (mounted) setState(() => _restarting = false);
+    }
   }
 
   @override
@@ -68,10 +108,19 @@ class _TorLogScreenState extends State<TorLogScreen> {
                 ClipboardData(text: _lines.join('\n')),
               );
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied')),
-              );
+              AppToast.show(context, 'Copied');
             },
+          ),
+          IconButton(
+            tooltip: 'Restart Tor',
+            icon: _restarting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.restart_alt),
+            onPressed: _restarting ? null : _restartTor,
           ),
         ],
       ),

@@ -75,6 +75,8 @@ class PersonaEditor extends StatelessWidget {
               child: TextField(
                 controller: nameController,
                 textCapitalization: TextCapitalization.sentences,
+                enableSuggestions: false,
+                autocorrect: false,
                 maxLength: 32,
                 decoration: InputDecoration(
                   labelText: 'Your username',
@@ -82,8 +84,24 @@ class PersonaEditor extends StatelessWidget {
                   helperText: 'Shown to others in the chat',
                   prefixIcon: const Icon(Icons.person),
                   counterText: '',
+                  // Disable the default underline to avoid double line
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                  ),
                 ),
               ),
             ),
@@ -97,14 +115,32 @@ class PersonaEditor extends StatelessWidget {
             maxLines: 2,
             minLines: 1,
             textCapitalization: TextCapitalization.sentences,
+            enableSuggestions: false,
+            autocorrect: false,
             decoration: InputDecoration(
               labelText: 'Your bio',
               hintText: bioHint ?? 'Something about you…',
               helperText: 'Shown on your profile to others in the room',
               prefixIcon: const Icon(Icons.notes_outlined),
               counterText: '',
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+              // Disable the default underline to avoid double line
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+              ),
             ),
           ),
         ],

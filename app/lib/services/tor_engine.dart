@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:tor_hidden_service/tor_hidden_service.dart';
 
 import '../config.dart';
@@ -36,6 +38,7 @@ class TorEngine extends ChangeNotifier {
   StreamSubscription<String>? _logSub;
   bool _started = false;
   String _lastLog = '';
+  final _lastLogNotifier = ValueNotifier<String>('');
 
   final List<HostedService> _hosted = [];
   final Map<String, String> _onions = {};
@@ -53,6 +56,8 @@ class TorEngine extends ChangeNotifier {
 
   String get lastLog => _lastLog;
 
+  ValueNotifier<String> get lastLogNotifier => _lastLogNotifier;
+
   Stream<String> get logs => _logs.stream;
 
   /// The version string of the bundled Tor binary (e.g. "Tor version 0.4.8.x").
@@ -60,6 +65,49 @@ class TorEngine extends ChangeNotifier {
 
   /// The Tor log from the current run (used by the Tor logs screen).
   Future<String?> readTorLog() => TorHiddenService.readTorLog();
+
+  /// Restarts Tor completely (stops and restarts with current hosted rooms).
+  /// Can be called from UI when user wants to force a Tor restart.
+  Future<void> restart() async {
+    debugPrint('[TorEngine] Manual restart requested');
+    await stop();
+    // Re-add the currently hosted services and restart
+    if (_hosted.isNotEmpty) {
+      final services = List<HostedService>.from(_hosted);
+      for (final service in services) {
+        await startHosting(service);
+      }
+    } else if (_clientUsers > 0) {
+      // If no hosted rooms but has client connections, just start for client
+      await _restart();
+    }
+  }
+
+  /// Starts the Android foreground service to keep Tor running in background.
+  /// Only has effect on Android.
+  Future<void> startBackgroundService() async {
+    if (!Platform.isAndroid) return;
+    try {
+      const channel = MethodChannel('com.onionchat.onionchat_mobile/tor_background');
+      await channel.invokeMethod('startBackgroundService');
+      debugPrint('[TorEngine] Android foreground service started');
+    } catch (e) {
+      debugPrint('[TorEngine] Failed to start background service: $e');
+    }
+  }
+
+  /// Stops the Android foreground service.
+  /// Only has effect on Android.
+  Future<void> stopBackgroundService() async {
+    if (!Platform.isAndroid) return;
+    try {
+      const channel = MethodChannel('com.onionchat.onionchat_mobile/tor_background');
+      await channel.invokeMethod('stopBackgroundService');
+      debugPrint('[TorEngine] Android foreground service stopped');
+    } catch (e) {
+      debugPrint('[TorEngine] Failed to stop background service: $e');
+    }
+  }
 
   /// Adds (or updates) a hosted room's hidden service and restarts Tor with the
   /// full set. Returns the room's `.onion` address.
@@ -81,6 +129,7 @@ class TorEngine extends ChangeNotifier {
     _onions.remove(roomId);
     if (_hosted.isEmpty && _clientUsers == 0) {
       await stop();
+      await stopBackgroundService();
     } else {
       await _restart();
     }
@@ -91,6 +140,9 @@ class TorEngine extends ChangeNotifier {
   Future<void> startForClient() async {
     _clientUsers++;
     if (!_started) await _restart();
+    // Start background service when there's at least one client connection
+    // so Tor keeps running when app is backgrounded
+    await startBackgroundService();
   }
 
   /// Releases one joined room's claim on Tor.
@@ -98,6 +150,7 @@ class TorEngine extends ChangeNotifier {
     if (_clientUsers > 0) _clientUsers--;
     if (_started && _hosted.isEmpty && _clientUsers == 0) {
       await stop();
+      await stopBackgroundService();
     }
   }
 
@@ -128,6 +181,7 @@ class TorEngine extends ChangeNotifier {
     try {
       _logSub ??= TorHiddenService.onLog.listen((line) {
         _lastLog = line;
+        _lastLogNotifier.value = line;
         _logs.add(line);
       });
       final services = [

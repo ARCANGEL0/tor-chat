@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
+import 'services/sticker_service.dart';
 import 'state/chat_theme.dart';
 import 'state/room_controller.dart';
 import 'state/theme_controller.dart';
@@ -11,6 +12,9 @@ import 'widgets/tap_click_sound.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemeController.instance.load();
+  // Initialize sticker service and auto-import WhatsApp stickers
+  await StickerService.instance.init();
+  StickerService.instance.maybeAutoImportWhatsApp();
   // Notifications are non-essential: never let a plugin failure block startup.
   try {
     await NotificationService.instance.init();
@@ -97,19 +101,22 @@ class _OnionChatAppState extends State<OnionChatApp>
       ),
       extensions: [
         ChatTheme(
-          myBubble: myBubble ?? scheme.primary,
-          myBubbleText: myBubble != null ? onColor(myBubble) : scheme.onPrimary,
-          theirBubble:
-              theirBubble ?? scheme.surfaceContainerHigh.withValues(alpha: 0.96),
+          myBubble: myBubble ?? const Color(0xFF8B5CF6),
+          myBubbleText: myBubble != null ? onColor(myBubble) : Colors.white,
+          theirBubble: theirBubble ?? const Color(0xFF2A1F4D),
           theirBubbleText:
-              theirBubble != null ? onColor(theirBubble) : scheme.onSurface,
+              theirBubble != null ? onColor(theirBubble) : const Color(0xFFE8DDF4),
           theirName: scheme.tertiary,
         ),
       ],
     );
     if (fontSizeFactor != 1.0) {
+      // The raw ThemeData text theme carries only colors — font geometry comes
+      // from the localized englishLike theme, so merge it in first (otherwise
+      // apply() trips over null font sizes) before scaling.
+      final concrete = theme.textTheme.merge(Typography.englishLike2021);
       theme = theme.copyWith(
-        textTheme: theme.textTheme.apply(fontSizeFactor: fontSizeFactor),
+        textTheme: concrete.apply(fontSizeFactor: fontSizeFactor),
       );
     }
     return theme;

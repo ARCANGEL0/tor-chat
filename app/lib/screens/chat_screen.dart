@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart' show rootBundle, Clipboard, ClipboardData;
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../models/chat_message.dart';
@@ -14,6 +17,7 @@ import '../services/wallpaper_lib.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../widgets/chat_picture.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/profile_avatar.dart';
@@ -21,6 +25,7 @@ import 'chat_settings_screen.dart';
 import 'image_crop_screen.dart';
 import 'peer_profile_screen.dart';
 import 'profile_screen.dart';
+import 'sticker_picker_screen.dart';
 import 'wallpaper_picker_screen.dart';
 
 /// WhatsApp-style conversation screen. In host mode the owner sees everyone
@@ -71,6 +76,12 @@ class _ChatScreenState extends State<ChatScreen> {
   /// session is started. Other rooms keep running untouched.
   Future<void> _resumeSession() async {
     final c = RoomController.instance;
+    
+    // Show connecting toast for client rooms
+    if (!c.isHost && !c.connected && !c.pendingApproval && c.error == null) {
+      AppToast.show(context, 'Connecting to ${widget.room.name.isNotEmpty ? widget.room.name : widget.room.onion}…');
+    }
+    
     await c.openRoom(widget.room);
     final store = await RoomStore.load();
     await store.saveRoom(widget.room);
@@ -108,12 +119,8 @@ class _ChatScreenState extends State<ChatScreen> {
     var files = result.files;
     if (files.length > _maxAttachFiles) {
       files = files.sublist(0, _maxAttachFiles);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Up to $_maxAttachFiles files at once — sending the first $_maxAttachFiles.'),
-        ),
-      );
+      AppToast.show(context,
+          'Up to $_maxAttachFiles files at once — sending the first $_maxAttachFiles.');
     }
     // Validate every file up front so an unsupported/oversized one aborts the
     // whole batch cleanly instead of half-sending.
@@ -122,15 +129,13 @@ class _ChatScreenState extends State<ChatScreen> {
     for (final file in files) {
       final mime = _mediaMime((file.extension ?? '').toLowerCase());
       if (mime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Only photos and videos are supported.')),
-        );
+        AppToast.show(context, 'Only photos and videos are supported.',
+            style: AppToastStyle.error);
         return;
       }
       if (file.size > 64 * 1024 * 1024) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File is too large (max 64 MB).')),
-        );
+        AppToast.show(context, 'File is too large (max 64 MB).',
+            style: AppToastStyle.error);
         return;
       }
       batch.add(file);
@@ -156,6 +161,7 @@ class _ChatScreenState extends State<ChatScreen> {
             image: bytes,
             circle: false,
             title: 'Edit image',
+            isSend: true,
           );
           if (cropped == null) continue; // user canceled this one
           sendBytes = cropped;
@@ -172,9 +178,8 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not send ${file.name}: $e')),
-            );
+            AppToast.show(context, 'Could not send ${file.name}: $e',
+                style: AppToastStyle.error);
           }
           break; // a failed upload usually means the next will fail too
         }
@@ -248,11 +253,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(c.isHost ? 'Leave room?' : 'Disconnect?'),
+        title: Text(c.isHost ? 'Leave room?' : 'Leave room?'),
         content: Text(c.isHost
             ? 'This stops hosting and everyone in the room will be disconnected. '
                 'Your message history stays saved.'
-            : 'You will leave this chat. Your message history stays saved.'),
+            : 'You will leave this chat. The room will be removed from your chat list. '
+                'To rejoin, you will need the namecode and password, and the host must approve you again.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -267,7 +273,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    await RoomController.instance.leave(widget.room);
+    await RoomController.instance.leaveAndRemove(widget.room);
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
@@ -319,10 +325,20 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _openPeerProfile(String username) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            PeerProfileScreen(room: widget.room, username: username),
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Profile',
+      barrierColor: Colors.black45,
+      transitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (ctx, _, _) =>
+          _ProfileOverlay(room: widget.room, username: username),
+      transitionBuilder: (ctx, anim, _, child) => FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+          child: child,
+        ),
       ),
     );
   }
@@ -373,23 +389,99 @@ class _ChatScreenState extends State<ChatScreen> {
     _openPeerProfile(username);
   }
 
+  /// Centered "Are you sure you want to kick X?" card over a blurred backdrop.
+  /// Only kicks (disconnect + remove from roster) if confirmed.
+  static Future<void> confirmKick(BuildContext ctx, String username) async {
+    final kicked = await showGeneralDialog<bool>(
+      context: ctx,
+      barrierDismissible: true,
+      barrierLabel: 'Kick $username',
+      barrierColor: Colors.black38,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (bctx, _, _) => Stack(
+        fit: StackFit.expand,
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: const ColoredBox(color: Colors.black38),
+          ),
+          Center(child: _KickCard(username: username)),
+        ],
+      ),
+      transitionBuilder: (ctx, anim, _, child) => FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+          child: child,
+        ),
+      ),
+    );
+    if (kicked == true) {
+      RoomController.instance.kickUser(username);
+    }
+  }
+
   void _openMyProfile() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ProfileScreen()),
     );
   }
 
-  void _copyMessage(ChatMessage msg) {
-    Clipboard.setData(ClipboardData(text: msg.text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard'),
-        duration: Duration(seconds: 1),
+  void _openStickers() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StickerPickerScreen(
+        onStickerSelected: _sendSticker,
       ),
     );
   }
 
-  Future<void> _editMessage(ChatMessage msg) async {
+  Future<void> _sendSticker(String packId, String stickerId, String imagePath) async {
+    final c = RoomController.instance;
+    if (!c.connected && !c.isHost) return;
+    
+    // Send as media message with type 'sticker'
+    try {
+      final bytes = await _resolveStickerBytes(imagePath);
+      if (bytes != null) {
+        await c.sendMedia(
+          bytes,
+          mediaType: 'image',
+          name: 'sticker_$stickerId.webp',
+          mime: 'image/webp',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.show(context, 'Failed to send sticker: $e', style: AppToastStyle.error);
+      }
+    }
+  }
+
+  Future<Uint8List?> _resolveStickerBytes(String imagePath) async {
+    // Handle base64 encoded
+    if (imagePath.startsWith('data:') || imagePath.length > 100 && !imagePath.contains('/')) {
+      final base64 = imagePath.contains(',') ? imagePath.split(',').last : imagePath;
+      return base64Decode(base64);
+    }
+    // Asset
+    if (imagePath.startsWith('asset:')) {
+      final data = await rootBundle.load(imagePath.substring(6));
+      return data.buffer.asUint8List();
+    }
+    // File path
+    if (imagePath.startsWith('/')) {
+      return File(imagePath).readAsBytes();
+    }
+    return null;
+  }
+
+  void _copyMessage(ChatMessage msg) {
+    Clipboard.setData(ClipboardData(text: msg.text));
+    AppToast.show(context, 'Copied to clipboard');
+  }  Future<void> _editMessage(ChatMessage msg) async {
     final controller = TextEditingController(text: msg.text);
     final result = await showDialog<String>(
       context: context,
@@ -455,11 +547,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ? Color(tc.settings.chatHeaderText!)
             : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: appBarBackground,
-        foregroundColor: chatHeaderText ??
-            (appBarBackground != null ? onColor(appBarBackground) : null),
+    return ListenableBuilder(
+      listenable: c,
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(
+          backgroundColor: appBarBackground,
+          foregroundColor: chatHeaderText ??
+              (appBarBackground != null ? onColor(appBarBackground) : null),
         leading: BackButton(onPressed: _goBack),
         title: Row(
           children: [
@@ -467,7 +561,7 @@ class _ChatScreenState extends State<ChatScreen> {
               picture: widget.room.chatPicture,
               fallbackAvatar: widget.room.avatar ??
                   ThemeController.instance.settings.avatar,
-              initial: widget.room.namecode,
+              initial: widget.room.name,
               size: 34,
               color: scheme.primary,
             ),
@@ -481,14 +575,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          widget.room.namecode,
+                          widget.room.name,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                       if (widget.room.isOwner) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.shield, size: 14),
+                        const Icon(Icons.dns, size: 15),
                       ],
                     ],
                   ),
@@ -553,92 +647,120 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            if (c.error != null) _ErrorBanner(text: c.error!),
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Wallpaper(_effectiveWallpaper).background(context),
-                  ListenableBuilder(
-                    listenable: c,
-                    builder: (context, _) {
-                      _scrollToBottom();
-                      if (c.messages.isEmpty) {
-                        return _WelcomeBubble(
-                          isHost: c.isHost,
-                          connected: c.connected,
-                          pendingApproval: c.pendingApproval,
-                        );
-                      }
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 12),
-                        itemCount: c.messages.length,
-                        itemBuilder: (context, i) {
-                          final msg = c.messages[i];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: MessageBubble(
-                              message: msg,
-                              myName: c.room?.username,
-                              myAvatar: c.room?.avatar ??
-                                  ThemeController.instance.settings.avatar,
-                              theirAvatar: c.members[msg.username]?.avatar,
-                              onAvatarTap: (u) => _openPeerProfile(u),
-                              onMyAvatarTap: _openMyProfile,
-                              onCopy: () => _copyMessage(msg),
-                              onEdit: () => _editMessage(msg),
-                              onDelete: () => _deleteMessage(msg),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            if (c.isHost && c.pendingJoins.isNotEmpty)
-              _PendingJoins(
-                requests: c.pendingJoins,
-                onApprove: c.approveJoin,
-                onDeny: c.denyJoin,
-              ),
-            if (_sendingMedia) ...[
-              if (_sendingLabel != null)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        _sendingLabel!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant,
-                        ),
+        child: ListenableBuilder(
+          listenable: c,
+          builder: (context, _) {
+            final showConnectionOverlay =
+                !c.isHost &&
+                !c.connected &&
+                !c.pendingApproval &&
+                c.error == null;
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Column(
+                  children: [
+                    if (c.error != null) _ErrorBanner(text: c.error!),
+                    Expanded(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Wallpaper(_effectiveWallpaper).background(context),
+                          ListenableBuilder(
+                            listenable: c,
+                            builder: (context, _) {
+                              _scrollToBottom();
+                              if (c.messages.isEmpty) {
+                                return _WelcomeBubble(
+                                  isHost: c.isHost,
+                                  connected: c.connected,
+                                  pendingApproval: c.pendingApproval,
+                                );
+                              }
+                              return ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 12),
+                                itemCount: c.messages.length,
+                                itemBuilder: (context, i) {
+                                  final msg = c.messages[i];
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 3),
+                                    child: MessageBubble(
+                                      message: msg,
+                                      myName: c.room?.username,
+                                      myAvatar: c.room?.avatar ??
+                                          ThemeController.instance.settings
+                                              .avatar,
+                                      theirAvatar:
+                                          c.members[msg.username]?.avatar,
+                                      onAvatarTap: (u) =>
+                                          _openPeerProfile(u),
+                                      onMyAvatarTap: _openMyProfile,
+                                      onCopy: () => _copyMessage(msg),
+                                      onEdit: () => _editMessage(msg),
+                                      onDelete: () => _deleteMessage(msg),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ),
+                    ),
+                    if (c.isHost && c.pendingJoins.isNotEmpty)
+                      _PendingJoins(
+                        requests: c.pendingJoins,
+                        onApprove: c.approveJoin,
+                        onDeny: c.denyJoin,
+                      ),
+                    if (_sendingMedia) ...[
+                      if (_sendingLabel != null)
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                _sendingLabel!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const LinearProgressIndicator(minHeight: 2),
                     ],
-                  ),
+                    _InputBar(
+                      controller: _inputController,
+                      canSend: _canSend,
+                      onSend: _send,
+                      onAttach: _attach,
+                      onStickers: _openStickers,
+                      enabled: c.connected || c.isHost,
+                      sending: _sendingMedia,
+                    ),
+                  ],
                 ),
-              const LinearProgressIndicator(minHeight: 2),
-            ],
-            _InputBar(
-              controller: _inputController,
-              canSend: _canSend,
-              onSend: _send,
-              onAttach: _attach,
-              enabled: c.connected || c.isHost,
-              sending: _sendingMedia,
-            ),
-          ],
+                if (showConnectionOverlay)
+                  _ConnectionOverlay(
+                    roomName: widget.room.name,
+                    onionAddress: widget.room.onion,
+                    isHost: c.isHost,
+                  ),
+              ],
+            );
+          },
         ),
       ),
-    );
+    ));  // closes Scaffold + outer ListenableBuilder
   }
 
   String _subtitle(RoomController c, ColorScheme scheme) {
@@ -736,11 +858,206 @@ class _WelcomeBubble extends StatelessWidget {
   }
 }
 
+class _ConnectionOverlay extends StatelessWidget {
+  final String roomName;
+  final String onionAddress;
+  final bool isHost;
+
+  const _ConnectionOverlay({
+    required this.roomName,
+    required this.onionAddress,
+    required this.isHost,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tc = ThemeController.instance;
+    final accent = Color(tc.settings.accentColor);
+
+    // Show chat name if available, otherwise show first part of onion address
+    String displayName = roomName;
+    if (displayName.isEmpty || displayName == onionAddress) {
+      // Show abbreviated onion address
+      if (onionAddress.length > 20) {
+        displayName = '${onionAddress.substring(0, 20)}...';
+      } else {
+        displayName = onionAddress;
+      }
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {}, // Prevent taps from passing through
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Blurred background
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: const ColoredBox(color: Colors.black26),
+          ),
+          // Connection card
+          SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Material(
+                  elevation: 24,
+                  borderRadius: BorderRadius.circular(28),
+                  color: scheme.surfaceContainerHigh.withValues(alpha: 0.95),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Tor icon with pulse animation
+                        _PulsingTorIcon(color: accent),
+                        const SizedBox(height: 24),
+                        // Title
+                        Text(
+                          'Connecting to $displayName',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: scheme.onSurface,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Subtitle
+                        Text(
+                          isHost
+                              ? 'Starting Tor hidden service…'
+                              : 'Establishing secure Tor connection…',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 24),
+                        // Animated progress indicator
+                        SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(accent),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Status text
+                        Text(
+                          'This may take up to a minute…',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms).scale(
+          begin: const Offset(0.9, 0.9),
+          curve: Curves.easeOutBack,
+        );
+  }
+}
+
+class _PulsingTorIcon extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const _PulsingTorIcon({required this.color, this.size = 64});
+
+  @override
+  State<_PulsingTorIcon> createState() => _PulsingTorIconState();
+}
+
+class _PulsingTorIconState extends State<_PulsingTorIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _scale,
+      builder: (context, child) => Transform.scale(
+        scale: _scale.value,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                widget.color.withValues(alpha: 0.2),
+                widget.color.withValues(alpha: 0.05),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.3),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.lock_outline_rounded,
+            size: widget.size * 0.5,
+            color: widget.color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool canSend;
   final VoidCallback onSend;
   final VoidCallback onAttach;
+  final VoidCallback onStickers;
   final bool enabled;
   final bool sending;
 
@@ -749,6 +1066,7 @@ class _InputBar extends StatelessWidget {
     required this.canSend,
     required this.onSend,
     required this.onAttach,
+    required this.onStickers,
     required this.enabled,
     required this.sending,
   });
@@ -800,11 +1118,21 @@ class _InputBar extends StatelessWidget {
             tooltip: 'Share media',
           ),
           const SizedBox(width: 4),
+          // Sticker button
+          IconButton(
+            onPressed: sending || !enabled ? null : onStickers,
+            icon: const Icon(Icons.emoji_emotions_outlined),
+            color: attachColor,
+            tooltip: 'Stickers',
+          ),
+          const SizedBox(width: 4),
           Expanded(
             child: TextField(
               controller: controller,
               enabled: enabled,
               textCapitalization: TextCapitalization.sentences,
+              enableSuggestions: false,
+              autocorrect: false,
               maxLines: 5,
               minLines: 1,
               style: TextStyle(
@@ -821,7 +1149,7 @@ class _InputBar extends StatelessWidget {
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.zero,
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -831,14 +1159,45 @@ class _InputBar extends StatelessWidget {
           AnimatedScale(
             scale: canSend ? 1 : 0.85,
             duration: const Duration(milliseconds: 150),
-            child: IconButton.filled(
-              onPressed: canSend && !sending ? onSend : null,
-              style: IconButton.styleFrom(
-                backgroundColor: buttonColor,
-                disabledBackgroundColor: scheme.surfaceContainerHighest,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: Ink(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.lerp(buttonColor, Colors.white, 0.14) ??
+                          buttonColor,
+                      Color.lerp(buttonColor, Colors.black, 0.18) ??
+                          buttonColor,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: buttonColor.withValues(alpha: 0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: canSend && !sending ? onSend : null,
+                  child: Icon(
+                    Icons.send_rounded,
+                    size: 20,
+                    color: Colors.white.withValues(
+                      alpha: canSend ? 1 : 0.6,
+                    ),
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.send_rounded),
-              tooltip: 'Send',
             ),
           ),
         ],
@@ -848,7 +1207,7 @@ class _InputBar extends StatelessWidget {
 }
 
 /// Join requests waiting for the host's approval, shown as notification-style
-/// cards above the input bar.
+/// cards above the input bar. Colors follow the app theme (not grey).
 class _PendingJoins extends StatelessWidget {
   final List<Map<String, dynamic>> requests;
   final ValueChanged<String> onApprove;
@@ -862,90 +1221,229 @@ class _PendingJoins extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final s = ThemeController.instance.settings;
+    final bg = s.inputBar != null ? Color(s.inputBar!) : const Color(0xFF1A0F2E);
     return Container(
-      color: scheme.surfaceContainerHigh.withValues(alpha: 0.9),
+      color: bg.withValues(alpha: 0.97),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final r in requests) _PendingJoinCard(request: r, onApprove: onApprove, onDeny: onDeny),
+          for (final r in requests)
+            _PendingJoinCard(
+              key: ValueKey(r['username']),
+              request: r,
+              onApprove: onApprove,
+              onDeny: onDeny,
+            ),
         ],
       ),
     );
   }
 }
 
-class _PendingJoinCard extends StatelessWidget {
+class _PendingJoinCard extends StatefulWidget {
   final Map<String, dynamic> request;
   final ValueChanged<String> onApprove;
   final ValueChanged<String> onDeny;
 
   const _PendingJoinCard({
+    super.key,
     required this.request,
     required this.onApprove,
     required this.onDeny,
   });
 
   @override
+  State<_PendingJoinCard> createState() => _PendingJoinCardState();
+}
+
+class _PendingJoinCardState extends State<_PendingJoinCard> {
+  bool _entered = false;
+  bool _leaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _entered = true);
+    });
+  }
+
+  void _resolve(bool approve) {
+    if (_leaving) return;
+    setState(() => _leaving = true);
+    // Let the exit animation finish before the request is removed.
+    Future.delayed(const Duration(milliseconds: 260), () {
+      final username = widget.request['username'] as String? ?? 'Someone';
+      if (approve) {
+        widget.onApprove(username);
+      } else {
+        widget.onDeny(username);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final username = request['username'] as String? ?? 'Someone';
+    final s = ThemeController.instance.settings;
+    final username = widget.request['username'] as String? ?? 'Someone';
+    final cardBg = s.chatHeader != null
+        ? Color(s.chatHeader!)
+        : const Color(0xFF1A0F2E); // dark purple
+    final accent = Color(s.accentColor);
+    final textColor = s.mainText != null
+        ? Color(s.mainText!)
+        : const Color(0xFFFFFFFF);
+    final muted = s.secondaryText != null
+        ? Color(s.secondaryText!)
+        : const Color(0xFFCBB8E8);
+    final innerColor = Color.lerp(cardBg, Colors.white, 0.08) ?? cardBg;
+    final visible = _entered && !_leaving;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            ProfileAvatar(
-              avatar: request['avatar'] as String?,
-              initial: username,
-              size: 34,
-              color: scheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 200),
+        child: AnimatedSlide(
+          offset: visible ? Offset.zero : const Offset(0.6, 0),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: AnimatedScale(
+            scale: visible ? 1 : 0.92,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+              decoration: BoxDecoration(
+                color: innerColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.45),
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
                   ),
-                  Text(
-                    'wants to join in.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: scheme.onSurfaceVariant,
+                ],
+              ),
+              child: Row(
+                children: [
+                  ProfileAvatar(
+                    avatar: widget.request['avatar'] as String?,
+                    initial: username,
+                    size: 34,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          username,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'wants to join in.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: muted,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Deny',
+                    onPressed: () => _resolve(false),
+                    icon: Icon(Icons.close, color: scheme.error),
+                  ),
+                  IconButton(
+                    tooltip: 'Approve',
+                    onPressed: () => _resolve(true),
+                    icon: Icon(Icons.check_circle, color: Colors.green.shade600),
                   ),
                 ],
               ),
             ),
-            IconButton(
-              tooltip: 'Deny',
-              onPressed: () => onDeny(username),
-              icon: Icon(Icons.close, color: scheme.error),
-            ),
-            IconButton(
-              tooltip: 'Approve',
-              onPressed: () => onApprove(username),
-              icon: Icon(Icons.check_circle, color: Colors.green.shade600),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Slide-in right panel listing everyone currently in the room.
+/// Blurred full-screen overlay holding a peer's profile card. Tapping
+/// anywhere outside the card closes it.
+class _ProfileOverlay extends StatelessWidget {
+  final Room room;
+  final String username;
+
+  const _ProfileOverlay({required this.room, required this.username});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).pop(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: const ColoredBox(color: Colors.black38),
+          ),
+          SafeArea(
+            child: Center(
+              child: GestureDetector(
+                onTap: () {},
+                child: PeerProfileScreen(room: room, username: username),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tiny neon/grey presence label (ONLINE/OFFLINE) next to a member's name.
+class _StatusPill extends StatelessWidget {  final String text;
+  final Color color;
+
+  const _StatusPill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.55), width: 1),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
 class _MembersPanel extends StatelessWidget {
   final ValueChanged<String> onMemberTap;
 
@@ -963,11 +1461,16 @@ class _MembersPanel extends StatelessWidget {
         s.membersText != null ? Color(s.membersText!) : onColor(bgColor);
     final headerColor = s.membersHeader != null
         ? Color(s.membersHeader!)
-        : const Color(0xFF4A148C); // deep purple, readable on lavender
+        : onColor(bgColor); // white-ish on the default dark panel
     final iconColor = s.membersIcon != null
         ? Color(s.membersIcon!)
-        : const Color(0xFF4A148C);
+        : onColor(bgColor);
     final dimmed = textColor.withValues(alpha: 0.7);
+    final onlineSet = c.onlineUsers;
+    final onlineColor =
+        s.onlineText != null ? Color(s.onlineText!) : const Color(0xFF39FF14);
+    final offlineColor =
+        s.offlineText != null ? Color(s.offlineText!) : const Color(0xFF9E9E9E);
     final hasWallpaper = s.membersWallpaper != null &&
         s.membersWallpaper!.isNotEmpty;
 
@@ -996,8 +1499,12 @@ class _MembersPanel extends StatelessWidget {
           child: ListenableBuilder(
             listenable: c,
             builder: (context, _) {
-              final members = c.members.values.toList()
-                ..sort((a, b) => a.username.compareTo(b.username));
+              final members = c.members.values.toList()..sort((a, b) {
+                  final ao = onlineSet.contains(a.username.toLowerCase());
+                  final bo = onlineSet.contains(b.username.toLowerCase());
+                  if (ao != bo) return ao ? -1 : 1;
+                  return a.username.compareTo(b.username);
+                });
               if (members.isEmpty) {
                 return Center(
                   child: Text('No members yet.', style: TextStyle(color: dimmed)),
@@ -1009,6 +1516,8 @@ class _MembersPanel extends StatelessWidget {
                 itemBuilder: (context, i) {
                   final m = members[i];
                   final isHost = c.isHost && m.username == c.room?.username;
+                  final isOnline = onlineSet.contains(m.username.toLowerCase());
+                  final canKick = c.isHost && !isHost;
                   return ListTile(
                     leading: ProfileAvatar(
                       avatar: m.avatar,
@@ -1030,8 +1539,13 @@ class _MembersPanel extends StatelessWidget {
                         ),
                         if (isHost) ...[
                           const SizedBox(width: 6),
-                          Icon(Icons.shield, size: 14, color: iconColor),
+                          const Text('👑', style: TextStyle(fontSize: 13)),
                         ],
+                        const SizedBox(width: 8),
+                        _StatusPill(
+                          text: isOnline ? 'ONLINE' : 'OFFLINE',
+                          color: isOnline ? onlineColor : offlineColor,
+                        ),
                       ],
                     ),
                     subtitle: m.bio == null || m.bio!.isEmpty
@@ -1042,6 +1556,17 @@ class _MembersPanel extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: dimmed),
                           ),
+                    trailing: canKick
+                        ? IconButton(
+                            tooltip: 'Kick ${m.username}',
+                            icon: Icon(
+                              Icons.person_remove_alt_1_outlined,
+                              color: iconColor.withValues(alpha: 0.85),
+                            ),
+                            onPressed: () =>
+                                _ChatScreenState.confirmKick(context, m.username),
+                          )
+                        : null,
                     onTap: () => onMemberTap(m.username),
                   );
                 },
@@ -1068,6 +1593,134 @@ class _MembersPanel extends StatelessWidget {
             ColoredBox(color: bgColor.withValues(alpha: 0.88)),
           content,
         ],
+      ),
+    );
+  }
+}
+
+/// Centered kick-confirmation card shown over a blurred backdrop.
+class _KickCard extends StatelessWidget {
+  final String username;
+
+  const _KickCard({required this.username});
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final bg = s.kickBackground != null
+        ? Color(s.kickBackground!)
+        : const Color(0xFF2A1F4D);
+    final border = s.kickBorder != null
+        ? Color(s.kickBorder!)
+        : const Color(0xFF8B5CF6);
+    final titleColor = s.kickTitle != null
+        ? Color(s.kickTitle!)
+        : const Color(0xFFE8DDF4);
+    final bodyColor = s.kickBody != null
+        ? Color(s.kickBody!)
+        : const Color(0xFFBDB4D6);
+    final iconColor = s.kickIcon != null
+        ? Color(s.kickIcon!)
+        : const Color(0xFFE23A5E);
+    final buttonColor = s.kickButton != null
+        ? Color(s.kickButton!)
+        : const Color(0xFFE23A5E);
+    final buttonTextColor = s.kickButtonText != null
+        ? Color(s.kickButtonText!)
+        : Colors.white;
+    final cancelColor = s.kickCancel != null
+        ? Color(s.kickCancel!)
+        : const Color(0xFFCBB8E8);
+    final font = s.kickFont.trim();
+    final size = s.kickFontSize;
+    final textTheme = Theme.of(context).textTheme;
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [bg, Color.lerp(bg, const Color(0xFF000000), 0.18)!],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: border.withValues(alpha: 0.45),
+            width: 1.2,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black54,
+              blurRadius: 26,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_remove_alt_1_outlined, size: 36, color: iconColor),
+            const SizedBox(height: 12),
+            Text(
+              'Kick $username?',
+              textAlign: TextAlign.center,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: titleColor,
+                fontFamily: font.isEmpty ? null : font,
+                fontSize: size,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'They will be disconnected from this room and removed from '
+              'the member list.',
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                color: bodyColor,
+                fontFamily: font.isEmpty ? null : font,
+                fontSize: size * 0.92,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: cancelColor,
+                      textStyle: TextStyle(
+                        fontFamily: font.isEmpty ? null : font,
+                        fontSize: size,
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: buttonColor,
+                      foregroundColor: buttonTextColor,
+                      textStyle: TextStyle(
+                        fontFamily: font.isEmpty ? null : font,
+                        fontSize: size,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Kick'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
