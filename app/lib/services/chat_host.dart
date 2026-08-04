@@ -89,6 +89,10 @@ class ChatHost {
   final _system = StreamController<ChatMessage>.broadcast();
   Stream<ChatMessage> get system => _system.stream;
 
+  /// Usernames of participants that were kicked out (roster removal notices).
+  final _onMemberKicked = StreamController<String>.broadcast();
+  Stream<String> get onMemberKicked => _onMemberKicked.stream;
+
   ChatHost({
     required this.port,
     required this.password,
@@ -102,6 +106,12 @@ class ChatHost {
   /// Approved participants currently in the room (pending requests excluded).
   int get clientCount =>
       _clients.where((c) => c.joined).length;
+
+  /// Usernames of approved participants currently connected (pending excluded).
+  List<String> get connectedUsernames => [
+        for (final c in _clients)
+          if (c.joined) c.username!,
+      ];
 
   /// Read-only view of the authoritative history (used by the smoke test to
   /// verify edits/deletions/wipe behaviour).
@@ -368,16 +378,41 @@ class ChatHost {
   /// Kicks every connected client out (their sockets are closed) while the
   /// room keeps running for new visitors. Used by "Disconnect everyone".
   void disconnectEveryone() {
+    final kicked = <String>[];
     for (final c in _clients.toList()) {
-      if (c.joined) {
-        _broadcast(
-          {'type': ChatProtocol.kSystem, 'text': '${c.username} disconnected!'},
-          except: c,
-        );
-      }
+      if (c.joined) kicked.add(c.username!);
       _drop(c);
     }
+    for (final u in kicked) {
+      _onMemberKicked.add(u);
+    }
     _onClientCount.add(clientCount);
+  }
+
+  /// Kicks a single participant out of the room: they get a `kicked` frame,
+  /// their socket is closed and they are removed from the roster. Works for
+  /// offline members too (they are dropped from the member list even though
+  /// they have no open socket). Kicked users must be approved again on rejoin.
+  void kick(String username) {
+    _HostClient? target;
+    for (final c in _clients) {
+      if (c.joined && c.username == username) {
+        target = c;
+        break;
+      }
+    }
+    knownUsernames.remove(username.toLowerCase());
+    _onMemberKicked.add(username);
+    if (target != null) {
+      try {
+        _send(target, {'type': ChatProtocol.kKicked});
+      } catch (_) {}
+      _drop(target, message: '$username was kicked');
+    } else {
+      // Offline member: no socket to close, but everyone (and the history)
+      // still sees the kick notice.
+      _emitSystem('$username was kicked');
+    }
   }
 
   /// Wipes every photo/video in the room for everyone: media messages are
@@ -444,6 +479,10 @@ class ChatHost {
       if (known) 'history': _history.map((m) => m.toJson()).toList(),
     });
 
+    // A first-time member becomes "known": while the room stays up they can
+    // hop back in without host approval (and get full history).
+    knownUsernames.add(client.username!.toLowerCase());
+
     final member = _clientMember(client);
     for (final c in _clients) {
       if (c != client && c.joined) {
@@ -508,10 +547,14 @@ class ChatHost {
         }
         client.joinedAt = DateTime.now().millisecondsSinceEpoch;
 
-        // Entry requires the host's approval. Add to the pending queue and ask
-        // the owner; the client is told to wait until a decision arrives.
+        // Known members (already on the roster) hop straight in — no approval
+        // needed. Brand-new users land in the pending queue for the owner.
         _pending.add(client);
         _send(client, {'type': ChatProtocol.kPending});
+        if (knownUsernames.contains(username.toLowerCase())) {
+          approveClient(username);
+          break;
+        }
         _onJoinRequest.add({
           'username': client.username,
           'color': client.colorIndex,
@@ -653,6 +696,14 @@ class ChatHost {
     _onProfile.add(update);
   }
 
+  /// Updates the room's password. If [password] is null or empty, the room
+  /// becomes open (no password required).
+  void updatePassword(String? password) {
+    final newPass = password?.trim().isEmpty ?? true ? null : password!.trim();
+    if (password == newPass) return;
+    password = newPass;
+  }
+
   Map<String, dynamic> _clientMember(_HostClient c) => ChatProtocol.memberJson(
         username: c.username!,
         color: c.colorIndex,
@@ -662,20 +713,21 @@ class ChatHost {
         joinedAt: c.joinedAt,
       );
 
-  void _drop(_HostClient client) {
+  void _drop(_HostClient client, {String message = ''}) {
     if (!_clients.remove(client)) return;
     _pending.remove(client);
     _onClientCount.add(clientCount);
     if (client.joined) {
       final name = client.username!;
+      final text = message.isEmpty ? '$name disconnected!' : message;
       _broadcast(
-        {'type': ChatProtocol.kSystem, 'text': '$name disconnected!'},
+        {'type': ChatProtocol.kSystem, 'text': text},
         except: client,
       );
       _addMessage(ChatMessage(
         type: ChatProtocol.kSystem,
         username: '',
-        text: '$name disconnected!',
+        text: text,
         ts: _now(),
       ));
     }
@@ -745,6 +797,7 @@ class ChatHost {
     await _onDelete.close();
     await _onDeleteAllMedia.close();
     await _onDeleteAllMessages.close();
+    await _onMemberKicked.close();
   }
 }
 

@@ -4,16 +4,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/room.dart';
+import 'app_toast.dart';
 
-/// Bottom sheet showing the room's invite details: namecode, password and a
-/// scannable QR code encoding both.
+/// Bottom sheet showing the room's invite details: onion address, optional password, and a scannable QR code.
 class InviteSheet extends StatelessWidget {
   final Room room;
 
   const InviteSheet({super.key, required this.room});
 
-  String get _qrPayload => 'onionchat://join?name=${Uri.encodeQueryComponent(room.namecode)}'
-      '&pass=${Uri.encodeQueryComponent(room.password)}';
+  String get _qrPayload => 'onionchat://join?onion=${Uri.encodeQueryComponent(room.onion)}'
+      '${room.password != null ? '&pass=${Uri.encodeQueryComponent(room.password!)}' : ''}'
+      '${room.name.isNotEmpty ? '&name=${Uri.encodeQueryComponent(room.name)}' : ''}';
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +47,7 @@ class InviteSheet extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Share this namecode and password. Keep them secret!',
+                'Share this onion address and optional password.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme
@@ -73,21 +74,30 @@ class InviteSheet extends StatelessWidget {
                   curve: Curves.easeOutBack),
               const SizedBox(height: 20),
               _CopyRow(
+                icon: Icons.link,
+                label: 'Onion address',
+                value: room.onion,
+                monospace: true,
+              ),
+              const SizedBox(height: 10),
+              if (room.password != null)
+                _CopyRow(
+                  icon: Icons.key,
+                  label: 'Password (optional)',
+                  value: room.password!,
+                  monospace: true,
+                ),
+              const SizedBox(height: 10),
+              _CopyRow(
                 icon: Icons.alternate_email,
-                label: 'Namecode',
-                value: room.namecode,
+                label: 'Room name',
+                value: room.name,
               ),
               const SizedBox(height: 10),
               _CopyRow(
                 icon: Icons.link,
-                label: 'Onion address (for chat.js / manual)',
-                value: room.onion,
-              ),
-              const SizedBox(height: 10),
-              _CopyRow(
-                icon: Icons.key,
-                label: 'Password',
-                value: room.password,
+                label: 'Share link',
+                value: _qrPayload,
                 monospace: true,
               ),
               const SizedBox(height: 20),
@@ -155,12 +165,7 @@ class _CopyRow extends StatelessWidget {
             icon: const Icon(Icons.copy),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label copied'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              AppToast.show(context, '$label copied');
             },
           ),
         ],

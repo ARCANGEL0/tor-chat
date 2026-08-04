@@ -56,6 +56,10 @@ class ChatClient {
   final _onDenied = StreamController<void>.broadcast();
   Stream<void> get onDenied => _onDenied.stream;
 
+  /// Fired when the host kicked us out of the room.
+  final _onKicked = StreamController<void>.broadcast();
+  Stream<void> get onKicked => _onKicked.stream;
+
   /// Fired when a message in the room was edited. Carries the new version
   /// (same [ChatMessage.id], new text).
   final _onEdit = StreamController<ChatMessage>.broadcast();
@@ -87,16 +91,42 @@ class ChatClient {
     required this.targetPort,
   });
 
+  /// Quick connection test to check if an onion service exists.
+  /// Returns true if connection succeeds (room exists), false otherwise.
+  static Future<bool> tryConnect(
+    String onionHost,
+    String password, {
+    Duration timeout = const Duration(seconds: 8),
+    String socksHost = '127.0.0.1',
+    int socksPort = 9050,
+  }) async {
+    try {
+      final socks = Socks5Client(proxyHost: socksHost, proxyPort: socksPort);
+      final conn = await socks.connect(
+        onionHost,
+        80, // hidden service port
+        timeout: timeout,
+      );
+      final ws = await TorWebSocket.connect(conn, onionHost);
+      ws.close();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool get isConnected => _ws != null;
 
   /// Connects, performs the SOCKS + WebSocket handshake and sends [password].
+  ///
+  /// If password is null/empty, no auth is sent (open room).
   ///
   /// Retries for a while: right after a room is created (or its host
   /// restarts) the hidden service descriptor can take up to a minute to
   /// propagate, so the first attempts often fail with "host unreachable" even
   /// though the room is reachable moments later. We keep trying with backoff
   /// for roughly three and a half minutes before giving up.
-  Future<void> connect({required String password}) async {
+  Future<void> connect({String? password}) async {
     if (_disposed) throw StateError('ChatClient was disposed');
     _password = password;
     Object? lastError;
@@ -125,7 +155,7 @@ class ChatClient {
     throw lastError!;
   }
 
-  Future<void> _attemptConnect(String password) async {
+  Future<void> _attemptConnect(String? password) async {
     if (_disposed) throw StateError('ChatClient was closed');
     final socks = Socks5Client(proxyHost: socksHost, proxyPort: socksPort);
     final conn = await socks.connect(
@@ -141,6 +171,9 @@ class ChatClient {
       if (!_disposed) _onClose.add(null);
     });
     ws.text.listen(_onData);
+    // Always send an auth frame so the host replies deterministically:
+    // a `prompt` when the room accepts us, or `auth_failed` otherwise. Sending
+    // nothing would leave both sides waiting forever (host never issues prompt).
     ws.sendText(ChatProtocol.encodeAuth(password));
   }
 
@@ -266,6 +299,9 @@ class ChatClient {
       case ChatProtocol.kDenied:
         _onDenied.add(null);
         break;
+      case ChatProtocol.kKicked:
+        _onKicked.add(null);
+        break;
       case ChatProtocol.kEdit:
         _onEdit.add(ChatMessage(
           type: ChatProtocol.kEdit,
@@ -305,6 +341,7 @@ class ChatClient {
     await _onAuthFailed.close();
     await _onPending.close();
     await _onDenied.close();
+    await _onKicked.close();
     await _onEdit.close();
     await _onDelete.close();
     await _onDeleteAllMedia.close();

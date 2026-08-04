@@ -11,6 +11,7 @@ import '../services/tor_engine.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/profile_avatar.dart';
 import 'avatar_picker_screen.dart';
 import 'splash_screen.dart';
@@ -187,19 +188,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final control = int.tryParse(_controlPort.text.trim());
     if (socks == null || control == null || socks <= 0 || control <= 0) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ports must be valid numbers')),
-      );
+      AppToast.show(context, 'Ports must be valid numbers',
+          style: AppToastStyle.error);
       return;
     }
     await ThemeController.instance.setTorPorts(socks: socks, control: control);
     if (!mounted) return;
     setState(() => _portsDirty = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Saved. Takes effect the next time Tor starts.'),
-      ),
-    );
+    AppToast.show(context, 'Saved. Takes effect the next time Tor starts.');
   }
 
   // --------------------------------------------------------------- wipe-all

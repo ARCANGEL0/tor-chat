@@ -3,15 +3,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../models/room.dart';
-import '../services/onion_identity.dart';
 import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../widgets/persona_editor.dart';
 import '../widgets/tor_progress_card.dart';
+import '../services/tor_engine.dart';
+import '../services/chat_client.dart';
 import 'chat_screen.dart';
 
-/// Connect to a friend's room by namecode + password.
+/// Connect to a friend's room by .onion address + optional password.
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
 
@@ -20,7 +21,7 @@ class ConnectScreen extends StatefulWidget {
 }
 
 class _ConnectScreenState extends State<ConnectScreen> {
-  final _nameController = TextEditingController();
+  final _onionController = TextEditingController();
   final _passController = TextEditingController();
   final _userController = TextEditingController();
   final _bioController = TextEditingController();
@@ -30,6 +31,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   bool _showPass = false;
   String? _error;
   String _stage = '';
+  String? _qrOnion;
 
   @override
   void initState() {
@@ -48,18 +50,20 @@ class _ConnectScreenState extends State<ConnectScreen> {
   }
 
   Future<void> _connect() async {
-    final rawName = _nameController.text.trim().toLowerCase();
+    final onion = _onionController.text.trim().toLowerCase();
     final password = _passController.text.trim();
     var username = _userController.text.trim();
 
-    if (rawName.isEmpty) {
-      setState(() => _error = 'Enter the room namecode.');
+    if (onion.isEmpty) {
+      setState(() => _error = 'Enter the .onion address.');
       return;
     }
-    if (password.isEmpty) {
-      setState(() => _error = 'Enter the room password.');
+    if (!onion.endsWith('.onion')) {
+      setState(() => _error = 'Invalid .onion address.');
       return;
     }
+    // password is optional
+
     if (username.isEmpty) {
       username = 'friend';
     }
@@ -67,21 +71,18 @@ class _ConnectScreenState extends State<ConnectScreen> {
     setState(() {
       _connecting = true;
       _error = null;
-      _stage = 'Starting Tor...';
+      _stage = 'Connecting…';
     });
 
     final store = await RoomStore.load();
     await store.setUsername(username);
 
-    // A raw .onion address can be entered directly (e.g. a chat.js server),
-    // otherwise the onion is derived from the namecode + password.
-    final rawOnion = OnionIdentity.isOnionAddress(rawName) ? rawName : '';
-    final roomId = rawOnion.isNotEmpty ? rawOnion : OnionIdentity.roomId(rawName, password);
+    final roomId = onion;
     final room = Room(
       id: roomId,
-      namecode: rawOnion.isNotEmpty ? rawOnion : rawName,
-      onion: rawOnion,
-      password: password,
+      name: onion,
+      onion: onion,
+      password: password.isEmpty ? null : password,
       isOwner: false,
       username: username,
       createdAt: DateTime.now(),
@@ -90,10 +91,16 @@ class _ConnectScreenState extends State<ConnectScreen> {
     );
 
     try {
-      setState(() => _stage = 'Booting Tor…');
+      setState(() => _stage = 'Connecting to $onion…');
       await RoomController.instance.startClient(room);
 
-      // Wait for the session to establish (ready or error).
+      if (RoomController.instance.error != null) {
+        setState(() {
+          _connecting = false;
+          _error = RoomController.instance.error;
+        });
+        return;
+      }
       final controller = RoomController.instance;
       if (controller.error != null) {
         setState(() {
@@ -103,7 +110,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
         return;
       }
       if (!controller.connected) {
-        // give the async handshake a moment
         await Future<void>.delayed(const Duration(milliseconds: 300));
         if (controller.error != null) {
           setState(() {
@@ -113,7 +119,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
           return;
         }
       }
-
+      room.onion = controller.room?.onion ?? roomId;
       await store.saveRoom(room);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -127,25 +133,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
     }
   }
 
-  void _handleQr(String raw) {
-    String name = '';
-    String pass = '';
-    try {
-      final uri = Uri.tryParse(raw.trim());
-      if (uri != null) {
-        final params = uri.queryParameters;
-        name = (params['name'] ?? '').trim().toLowerCase();
-        pass = (params['pass'] ?? '').trim();
-      }
-    } catch (_) {}
-    if (name.isEmpty && pass.isEmpty) {
-      setState(() => _error = 'That QR doesn\'t look like an OnionChat invite.');
-      return;
-    }
-    _nameController.text = name;
-    _passController.text = pass;
-  }
-
   Future<void> _scanQr() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -153,6 +140,116 @@ class _ConnectScreenState extends State<ConnectScreen> {
       backgroundColor: Colors.black,
       builder: (_) => _QrScanner(onDetected: _handleQr),
     );
+  }
+
+  void _handleQr(String raw) {
+    String onion = '';
+    String pass = '';
+    String name = '';
+    try {
+      final uri = Uri.tryParse(raw.trim());
+      if (uri != null) {
+        final params = uri.queryParameters;
+        onion = (params['onion'] ?? '').trim().toLowerCase();
+        pass = (params['pass'] ?? '').trim();
+        name = (params['name'] ?? '').trim();
+      }
+    } catch (_) {}
+    if (onion.isEmpty) {
+      if (raw.trim().endsWith('.onion')) {
+        onion = raw.trim().toLowerCase();
+      }
+    }
+    if (onion.isEmpty) {
+      setState(() => _error = "That QR doesn't look like an OnionChat invite.");
+      return;
+    }
+    _onionController.text = onion;
+    _passController.text = pass;
+    _qrOnion = onion;
+  }
+
+  Future<void> _connectFromQr() async {
+    if (_qrOnion == null) return;
+    final password = _passController.text.trim();
+    var username = _userController.text.trim();
+
+    if (username.isEmpty) {
+      username = 'friend';
+    }
+
+    setState(() {
+      _connecting = true;
+      _error = null;
+      _stage = 'Connecting…';
+    });
+
+    final store = await RoomStore.load();
+    await store.setUsername(username);
+
+    final roomId = _qrOnion!;
+    final room = Room(
+      id: roomId,
+      name: roomId,
+      onion: roomId,
+      password: password.isEmpty ? null : password,
+      isOwner: false,
+      username: username,
+      createdAt: DateTime.now(),
+      avatar: _avatar,
+      bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+    );
+
+    try {
+      setState(() => _stage = 'Connecting to $_qrOnion…');
+      await RoomController.instance.startClient(room);
+
+      if (RoomController.instance.error != null) {
+        setState(() {
+          _connecting = false;
+          _error = RoomController.instance.error;
+        });
+        return;
+      }
+      final controller = RoomController.instance;
+      if (controller.error != null) {
+        setState(() {
+          _connecting = false;
+          _error = controller.error;
+        });
+        return;
+      }
+      if (!controller.connected) {
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        if (controller.error != null) {
+          setState(() {
+            _connecting = false;
+            _error = controller.error;
+          });
+          return;
+        }
+      }
+      room.onion = controller.room?.onion ?? roomId;
+      await store.saveRoom(room);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => ChatScreen(room: room)),
+      );
+    } catch (e) {
+      setState(() {
+        _connecting = false;
+        _error = 'Connection failed: $e';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _onionController.dispose();
+    _passController.dispose();
+    _userController.dispose();
+    _bioController.dispose();
+    super.dispose();
   }
 
   @override
@@ -171,10 +268,17 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
   Widget _buildProgress() {
     return Padding(
-      padding: const EdgeInsets.only(top: 60),
-      child: TorProgressCard(
-        title: 'Connecting…',
-        subtitle: _stage,
+      padding: const EdgeInsets.only(top: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TorProgressCard(
+            title: 'Connecting…',
+            subtitle: _stage,
+          ),
+          const SizedBox(height: 16),
+          _AppLogView(),
+        ],
       ),
     ).animate().fadeIn(duration: 300.ms);
   }
@@ -196,7 +300,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Enter the namecode and password your friend shared with you, '
+                'Enter the .onion address your friend shared with you, '
                 'or scan their invite QR code. The app routes your connection '
                 'through Tor.',
                 style: Theme.of(context)
@@ -208,26 +312,28 @@ class _ConnectScreenState extends State<ConnectScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        TextField(
-          controller: _nameController,
+        TextFormField(
+          controller: _onionController,
           textCapitalization: TextCapitalization.none,
           autocorrect: false,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Room namecode',
-            prefixIcon: const Icon(Icons.alternate_email),
+            labelText: '.onion address',
+            hintText: 'e.g. abc123def456ghi789jkl.onion',
+            prefixIcon: const Icon(Icons.link),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
         const SizedBox(height: 16),
-        TextField(
+        TextFormField(
           controller: _passController,
           textCapitalization: TextCapitalization.none,
           autocorrect: false,
           obscureText: !_showPass,
           decoration: InputDecoration(
-            labelText: 'Room password',
-            prefixIcon: const Icon(Icons.key),
+            labelText: 'Password (optional)',
+            hintText: 'Leave empty if no password',
+            prefixIcon: const Icon(Icons.lock),
             suffixIcon: IconButton(
               tooltip: _showPass ? 'Hide password' : 'Show password',
               icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility),
@@ -298,20 +404,58 @@ class _ConnectScreenState extends State<ConnectScreen> {
       ],
     );
   }
+}
 
+class _AppLogView extends StatelessWidget {
   @override
-  void dispose() {
-    _nameController.dispose();
-    _passController.dispose();
-    _userController.dispose();
-    _bioController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ValueListenableBuilder<String>(
+      valueListenable: TorEngine.instance.lastLogNotifier,
+      builder: (context, lastLog, _) {
+        if (lastLog.isEmpty) return const SizedBox.shrink();
+        return Container(
+          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'App Log',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                lastLog
+                    .replaceFirst(RegExp(r'^.*?\[notice\]\s*'), '')
+                    .trim(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: scheme.onSurfaceVariant,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
-/// Full-screen QR scanner that pops on the first detected invite.
 class _QrScanner extends StatefulWidget {
-  final ValueChanged<String> onDetected;
+  final void Function(String) onDetected;
+
   const _QrScanner({required this.onDetected});
 
   @override

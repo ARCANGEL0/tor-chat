@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/app_assets.dart';
 import '../services/image_pick.dart';
 import '../widgets/profile_avatar.dart';
+import '../widgets/app_toast.dart';
 
 const _avatarCanceled = Object();
 const _avatarDefault = Object();
@@ -86,9 +87,8 @@ class AvatarPickerScreen extends StatelessWidget {
                 }
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Could not load that picture: $e')),
-                );
+                AppToast.show(context, 'Could not load that picture: $e',
+                    style: AppToastStyle.error);
               }
             },
             icon: const Icon(Icons.add_a_photo_outlined),

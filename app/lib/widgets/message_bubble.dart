@@ -264,25 +264,115 @@ class _SystemNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final bg = s.noticeColor != null
+        ? Color(s.noticeColor!)
+        : const Color(0xFF2A1F4D);
+    final fg = s.noticeText != null
+        ? Color(s.noticeText!)
+        : onColor(bg);
+    final font = s.noticeFont.trim();
+    final size = s.noticeFontSize;
+    final glow = bg.withValues(alpha: 0.55);
+
+    // Only "X has connected / has disconnected" tips get the little presence
+    // dot; each user gets their own deterministic color from the palette.
+    final presenceUser = _presenceUser(text);
+    final dotColor =
+        presenceUser != null ? _userColor(presenceUser) : null;
+
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.75),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontStyle: FontStyle.italic,
-            color: scheme.onSurfaceVariant,
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              bg.withValues(alpha: 0.9),
+              bg,
+              bg.withValues(alpha: 0.9),
+            ],
           ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(6),
+            bottomLeft: Radius.circular(6),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(color: glow, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: glow.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (dotColor != null) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: dotColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: dotColor.withValues(alpha: 0.85),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: size,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: fg,
+                  fontFamily: font.isEmpty ? null : font,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 320.ms).slideY(
+            begin: 0.6,
+            end: 0,
+            duration: 320.ms,
+            curve: Curves.easeOutBack,
+          ),
     );
+  }
+
+  /// Extracts the username from "X has connected!" / "X has disconnected."
+  /// Returns `null` for any other system notice.
+  String? _presenceUser(String text) {
+    final connected = RegExp(r'^(.*?)\s+has connected[!.]?$');
+    final disconnected = RegExp(r'^(.*?)\s+has disconnected[!.]?$');
+    final mc = connected.firstMatch(text);
+    if (mc != null) return mc.group(1);
+    final md = disconnected.firstMatch(text);
+    if (md != null) return md.group(1);
+    return null;
+  }
+
+  /// Deterministic per-user color from the standard user palette.
+  Color _userColor(String username) {
+    var hash = 0;
+    for (final code in username.codeUnits) {
+      hash = (hash * 31 + code) & 0x7fffffff;
+    }
+    return Color(kUserColorPalette[hash % kUserColorPalette.length]);
   }
 }

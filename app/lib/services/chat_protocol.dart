@@ -35,6 +35,10 @@ class ChatProtocol {
   /// Host rejected a joining client.
   static const kDenied = 'denied';
 
+  /// Host kicked a participant out mid-chat. The client disconnects itself
+  /// after receiving this frame.
+  static const kKicked = 'kicked';
+
   /// Host wiped every photo/video in the room (everyone deletes media
   /// messages, their local media caches and the host's stored bytes).
   static const kDeleteAllMedia = 'delete_all_media';

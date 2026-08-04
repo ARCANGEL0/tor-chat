@@ -87,8 +87,74 @@ class AppSettings {
   /// Chat message text size.
   double chatFontSize;
 
+/// Granular font families ('' = inherit from mainFont).
+  String mainHeaderFont;
+  String mainChatsFont;
+  String chatHeaderFont;
+  String chatBubblesFont;
+  String memberListFont;
+  String settingsFont;
+  String splashFont;
+
+  /// Granular font sizes (0 = inherit from mainFontSize).
+  double mainHeaderFontSize;
+  double mainChatsFontSize;
+  double chatHeaderFontSize;
+  double chatBubblesFontSize;
+  double memberListFontSize;
+  double settingsFontSize;
+  double splashFontSize;
+
+  /// Granular text colors (null = theme default).
+  int? mainHeaderTextColor;
+  int? mainChatsTextColor;
+  int? chatHeaderTextColor;
+  int? memberListTextColor;
+  int? chatBubblesTextColor;
+  int? settingsTextColor;
+  int? splashTextColor;
+
   /// Optional override for the chat message text color (bubbles).
   int? chatTextColor;
+
+  /// Profile card (the overlay shown when tapping a participant) colors.
+  int? profileBackground; // card background
+  int? profileText; // username text
+  int? profileSecondaryText; // bio / joined time
+  int? profileAccent; // avatar ring + icons
+
+  /// Profile card font ('' = inherit from [mainFont]) and text size.
+  String profileFont;
+  double profileFontSize;
+
+  /// Online/offline presence label colors in the member list.
+  int? onlineText; // "ONLINE" label
+  int? offlineText; // "OFFLINE" label
+
+  /// System/notification "tips" bubble in the chat (e.g. "started the room",
+  /// "has connected", "has disconnected").
+  int? noticeColor; // bubble background
+  int? noticeText; // bubble text color
+  String noticeFont; // '' = inherit from chatFont
+  double noticeFontSize;
+
+  /// Custom top-left toast ("Profile saved", errors, etc.).
+  int? toastBackground; // toast bubble background
+  int? toastText; // toast text color
+  String toastFont; // '' = inherit from mainFont
+  double toastFontSize;
+
+  /// Kick confirmation card (shown when the host kicks a member).
+  int? kickBackground; // card background
+  int? kickBorder; // card border
+  int? kickTitle; // "Kick <name>?" heading
+  int? kickBody; // explanatory text
+  int? kickIcon; // warning icon color
+  int? kickButton; // Kick button background
+  int? kickButtonText; // text on the Kick button
+  int? kickCancel; // Cancel button text
+  String kickFont; // '' = inherit from mainFont
+  double kickFontSize;
 
   /// Tor daemon ports.
   int socksPort;
@@ -134,28 +200,134 @@ class AppSettings {
     this.inputTextarea,
     this.inputButton,
     this.inputAttach,
-    this.mainFont = '',
-    this.mainFontSize = 14.0,
-    this.chatFont = '',
-    this.chatFontSize = 15.0,
-    this.chatTextColor,
-    this.socksPort = 9050,
-    this.controlPort = 9051,
-    this.notificationsEnabled = true,
-    this.notifSound = true,
-    this.notifVibrate = true,
-    this.soundClick = true,
-    this.soundSend = true,
-    this.soundReceive = true,
-    this.useBridges = false,
-    this.bridges = '',
-  });
+this.mainFont = '',
+      this.mainFontSize = 14.0,
+      this.chatFont = '',
+      this.chatFontSize = 15.0,
+      this.mainHeaderFont = '',
+      this.mainChatsFont = '',
+      this.chatHeaderFont = '',
+      this.chatBubblesFont = '',
+      this.memberListFont = '',
+      this.settingsFont = '',
+      this.splashFont = '',
+      this.mainHeaderFontSize = 0.0,
+      this.mainChatsFontSize = 0.0,
+      this.chatHeaderFontSize = 0.0,
+      this.chatBubblesFontSize = 0.0,
+      this.memberListFontSize = 0.0,
+      this.settingsFontSize = 0.0,
+      this.splashFontSize = 0.0,
+      this.mainHeaderTextColor,
+      this.mainChatsTextColor,
+      this.chatHeaderTextColor,
+      this.memberListTextColor,
+      this.chatBubblesTextColor,
+      this.settingsTextColor,
+      this.splashTextColor,
+      this.chatTextColor,
+      this.profileBackground,
+      this.profileText,
+      this.profileSecondaryText,
+      this.profileAccent,
+      this.profileFont = '',
+      this.profileFontSize = 15.0,
+      this.onlineText,
+      this.offlineText,
+      this.noticeColor,
+      this.noticeText,
+      this.noticeFont = '',
+      this.noticeFontSize = 12.0,
+      this.toastBackground,
+      this.toastText,
+      this.toastFont = '',
+      this.toastFontSize = 13.0,
+      this.kickBackground,
+      this.kickBorder,
+      this.kickTitle,
+      this.kickBody,
+      this.kickIcon,
+      this.kickButton,
+      this.kickButtonText,
+      this.kickCancel,
+      this.kickFont = '',
+      this.kickFontSize = 15.0,
+      this.socksPort = 9050,
+      this.controlPort = 9051,
+      this.notificationsEnabled = true,
+      this.notifSound = true,
+      this.notifVibrate = true,
+      this.soundClick = true,
+      this.soundSend = true,
+      this.soundReceive = true,
+      this.useBridges = false,
+      this.bridges = '',
+    });
 
   factory AppSettings.defaults() => AppSettings(
         accentColor: defaultAccent,
         themeMode: modeDark,
         logoColor: defaultLogoColor,
         chatBackground: 0xFF1A0F2E, // very dark purple
+        background: 0xFF140A1E, // even darker for main pages
+        bubbleMine: 0xFF8B5CF6, // lighter indigo/purple sent bubbles
+        bubbleTheirs: 0xFF2A1F4D, // dark purple received bubbles
+        headerColor: 0xFF1A0F2E, // dark purple header
+        chatHeader: 0xFF1A0F2E, // dark purple chat header
+        membersBackground: 0xFF1A0F2E, // dark purple member list
+        membersHeader: 0xFFE8DDF4, // light purple header, readable on dark
+        membersText: 0xFFE8DDF4, // light purple text for members
+        inputBar: 0xFF1A0F2E, // dark purple input footer
+        inputTextarea: 0xFF140A1E, // even darker text field
+        inputButton: 0xFF5B2DD3, // deep indigo send button
+        inputAttach: 0xFF5B2DD3, // deep indigo attach
+        mainHeaderFont: '',
+        mainChatsFont: '',
+        chatHeaderFont: '',
+        chatBubblesFont: '',
+        memberListFont: '',
+        settingsFont: '',
+        splashFont: '',
+        mainHeaderFontSize: 0.0,
+        mainChatsFontSize: 0.0,
+        chatHeaderFontSize: 0.0,
+        chatBubblesFontSize: 0.0,
+        memberListFontSize: 0.0,
+        settingsFontSize: 0.0,
+        splashFontSize: 0.0,
+        mainHeaderTextColor: 0xFFFFFFFF, // white
+        mainChatsTextColor: 0xFFE8DDF4, // light purple
+        chatHeaderTextColor: 0xFFFFFFFF, // white
+        memberListTextColor: 0xFFFFFFFF, // white
+        chatBubblesTextColor: 0xFFFFFFFF, // white
+        settingsTextColor: 0xFFFFFFFF, // white
+        splashTextColor: 0xFFFFFFFF, // white
+        profileBackground: 0xFF1A0F2E, // deep dark purple card
+        profileText: 0xFFFFFFFF, // white username
+        profileSecondaryText: 0xFFCBB8E8, // light purple muted text
+        profileAccent: 0xFF7C3FED, // tor purple accent
+        profileFont: '',
+        profileFontSize: 15.0,
+        onlineText: 0xFF39FF14, // neon green ONLINE label
+        offlineText: 0xFF9E9E9E, // greyed OUT OFFLINE label
+        noticeColor: 0xFF2A1F4D, // dark purple system tips bubble
+        noticeText: 0xFFE8DDF4, // light lavender tips text
+        noticeFont: '',
+        noticeFontSize: 12.0,
+        toastBackground: 0xFF2A1F4D, // dark purple toast bubble
+        toastText: 0xFFE8DDF4, // light lavender toast text
+        toastFont: '',
+        toastFontSize: 13.0,
+        kickBackground: 0xFF2A1F4D, // dark purple kick card
+        kickBorder: 0xFF8B5CF6, // light indigo border
+        kickTitle: 0xFFE8DDF4, // light lavender heading
+        kickBody: 0xFFBDB4D6, // muted lavender body
+        kickIcon: 0xFFE23A5E, // light crimson red icon
+        kickButton: 0xFFE23A5E, // light crimson red Kick button
+        kickButtonText: 0xFFFFFFFF, // white button label
+        kickCancel: 0xFFCBB8E8, // light purple Cancel
+        kickFont: '',
+        kickFontSize: 15.0,
       );
 
   AppSettings copy() => AppSettings(
@@ -190,7 +362,54 @@ class AppSettings {
         mainFontSize: mainFontSize,
         chatFont: chatFont,
         chatFontSize: chatFontSize,
+        mainHeaderFont: mainHeaderFont,
+        mainChatsFont: mainChatsFont,
+        chatHeaderFont: chatHeaderFont,
+        chatBubblesFont: chatBubblesFont,
+        memberListFont: memberListFont,
+        settingsFont: settingsFont,
+        splashFont: splashFont,
+        mainHeaderFontSize: mainHeaderFontSize,
+        mainChatsFontSize: mainChatsFontSize,
+        chatHeaderFontSize: chatHeaderFontSize,
+        chatBubblesFontSize: chatBubblesFontSize,
+        memberListFontSize: memberListFontSize,
+        settingsFontSize: settingsFontSize,
+        splashFontSize: splashFontSize,
+        mainHeaderTextColor: mainHeaderTextColor,
+        mainChatsTextColor: mainChatsTextColor,
+        chatHeaderTextColor: chatHeaderTextColor,
+        memberListTextColor: memberListTextColor,
+        chatBubblesTextColor: chatBubblesTextColor,
+        settingsTextColor: settingsTextColor,
+        splashTextColor: splashTextColor,
         chatTextColor: chatTextColor,
+        profileBackground: profileBackground,
+        profileText: profileText,
+        profileSecondaryText: profileSecondaryText,
+        profileAccent: profileAccent,
+        profileFont: profileFont,
+        profileFontSize: profileFontSize,
+        onlineText: onlineText,
+        offlineText: offlineText,
+        noticeColor: noticeColor,
+        noticeText: noticeText,
+        noticeFont: noticeFont,
+        noticeFontSize: noticeFontSize,
+        toastBackground: toastBackground,
+        toastText: toastText,
+        toastFont: toastFont,
+        toastFontSize: toastFontSize,
+        kickBackground: kickBackground,
+        kickBorder: kickBorder,
+        kickTitle: kickTitle,
+        kickBody: kickBody,
+        kickIcon: kickIcon,
+        kickButton: kickButton,
+        kickButtonText: kickButtonText,
+        kickCancel: kickCancel,
+        kickFont: kickFont,
+        kickFontSize: kickFontSize,
         socksPort: socksPort,
         controlPort: controlPort,
         notificationsEnabled: notificationsEnabled,
@@ -231,6 +450,57 @@ class AppSettings {
         'membersBackground': membersBackground,
         'membersIcon': membersIcon,
         'chatText': chatTextColor,
+        'mainFont': mainFont,
+        'mainFontSize': mainFontSize,
+        'chatFont': chatFont,
+        'chatFontSize': chatFontSize,
+        'mainHeaderFont': mainHeaderFont,
+        'mainChatsFont': mainChatsFont,
+        'chatHeaderFont': chatHeaderFont,
+        'chatBubblesFont': chatBubblesFont,
+        'memberListFont': memberListFont,
+        'settingsFont': settingsFont,
+        'splashFont': splashFont,
+        'mainHeaderFontSize': mainHeaderFontSize,
+        'mainChatsFontSize': mainChatsFontSize,
+        'chatHeaderFontSize': chatHeaderFontSize,
+        'chatBubblesFontSize': chatBubblesFontSize,
+        'memberListFontSize': memberListFontSize,
+        'settingsFontSize': settingsFontSize,
+        'splashFontSize': splashFontSize,
+        'mainHeaderTextColor': mainHeaderTextColor,
+        'mainChatsTextColor': mainChatsTextColor,
+        'chatHeaderTextColor': chatHeaderTextColor,
+        'memberListTextColor': memberListTextColor,
+        'chatBubblesTextColor': chatBubblesTextColor,
+        'settingsTextColor': settingsTextColor,
+        'splashTextColor': splashTextColor,
+        'profileBackground': profileBackground,
+        'profileText': profileText,
+        'profileSecondaryText': profileSecondaryText,
+        'profileAccent': profileAccent,
+        'profileFont': profileFont,
+        'profileFontSize': profileFontSize,
+        'onlineText': onlineText,
+        'offlineText': offlineText,
+        'noticeColor': noticeColor,
+        'noticeText': noticeText,
+        'noticeFont': noticeFont,
+        'noticeFontSize': noticeFontSize,
+        'toastBackground': toastBackground,
+        'toastText': toastText,
+        'toastFont': toastFont,
+        'toastFontSize': toastFontSize,
+        'kickBackground': kickBackground,
+        'kickBorder': kickBorder,
+        'kickTitle': kickTitle,
+        'kickBody': kickBody,
+        'kickIcon': kickIcon,
+        'kickButton': kickButton,
+        'kickButtonText': kickButtonText,
+        'kickCancel': kickCancel,
+        'kickFont': kickFont,
+        'kickFontSize': kickFontSize,
       };
 
   Map<String, dynamic> toJson() => {
@@ -265,7 +535,54 @@ class AppSettings {
         'mainFontSize': mainFontSize,
         'chatFont': chatFont,
         'chatFontSize': chatFontSize,
+        'mainHeaderFont': mainHeaderFont,
+        'mainChatsFont': mainChatsFont,
+        'chatHeaderFont': chatHeaderFont,
+        'chatBubblesFont': chatBubblesFont,
+        'memberListFont': memberListFont,
+        'settingsFont': settingsFont,
+        'splashFont': splashFont,
+        'mainHeaderFontSize': mainHeaderFontSize,
+        'mainChatsFontSize': mainChatsFontSize,
+        'chatHeaderFontSize': chatHeaderFontSize,
+        'chatBubblesFontSize': chatBubblesFontSize,
+        'memberListFontSize': memberListFontSize,
+        'settingsFontSize': settingsFontSize,
+        'splashFontSize': splashFontSize,
+        'mainHeaderTextColor': mainHeaderTextColor,
+        'mainChatsTextColor': mainChatsTextColor,
+        'chatHeaderTextColor': chatHeaderTextColor,
+        'memberListTextColor': memberListTextColor,
+        'chatBubblesTextColor': chatBubblesTextColor,
+        'settingsTextColor': settingsTextColor,
+        'splashTextColor': splashTextColor,
         'chatTextColor': chatTextColor,
+        'profileBackground': profileBackground,
+        'profileText': profileText,
+        'profileSecondaryText': profileSecondaryText,
+        'profileAccent': profileAccent,
+        'profileFont': profileFont,
+        'profileFontSize': profileFontSize,
+        'onlineText': onlineText,
+        'offlineText': offlineText,
+        'noticeColor': noticeColor,
+        'noticeText': noticeText,
+        'noticeFont': noticeFont,
+        'noticeFontSize': noticeFontSize,
+        'toastBackground': toastBackground,
+        'toastText': toastText,
+        'toastFont': toastFont,
+        'toastFontSize': toastFontSize,
+        'kickBackground': kickBackground,
+        'kickBorder': kickBorder,
+        'kickTitle': kickTitle,
+        'kickBody': kickBody,
+        'kickIcon': kickIcon,
+        'kickButton': kickButton,
+        'kickButtonText': kickButtonText,
+        'kickCancel': kickCancel,
+        'kickFont': kickFont,
+        'kickFontSize': kickFontSize,
         'socksPort': socksPort,
         'controlPort': controlPort,
         'notificationsEnabled': notificationsEnabled,
@@ -310,7 +627,54 @@ class AppSettings {
         mainFontSize: (json['mainFontSize'] as num?)?.toDouble() ?? 14.0,
         chatFont: json['chatFont'] as String? ?? '',
         chatFontSize: (json['chatFontSize'] as num?)?.toDouble() ?? 15.0,
+        mainHeaderFont: json['mainHeaderFont'] as String? ?? '',
+        mainChatsFont: json['mainChatsFont'] as String? ?? '',
+        chatHeaderFont: json['chatHeaderFont'] as String? ?? '',
+        chatBubblesFont: json['chatBubblesFont'] as String? ?? '',
+        memberListFont: json['memberListFont'] as String? ?? '',
+        settingsFont: json['settingsFont'] as String? ?? '',
+        splashFont: json['splashFont'] as String? ?? '',
+        mainHeaderFontSize: (json['mainHeaderFontSize'] as num?)?.toDouble() ?? 0.0,
+        mainChatsFontSize: (json['mainChatsFontSize'] as num?)?.toDouble() ?? 0.0,
+        chatHeaderFontSize: (json['chatHeaderFontSize'] as num?)?.toDouble() ?? 0.0,
+        chatBubblesFontSize: (json['chatBubblesFontSize'] as num?)?.toDouble() ?? 0.0,
+        memberListFontSize: (json['memberListFontSize'] as num?)?.toDouble() ?? 0.0,
+        settingsFontSize: (json['settingsFontSize'] as num?)?.toDouble() ?? 0.0,
+        splashFontSize: (json['splashFontSize'] as num?)?.toDouble() ?? 0.0,
+        mainHeaderTextColor: json['mainHeaderTextColor'] as int?,
+        mainChatsTextColor: json['mainChatsTextColor'] as int?,
+        chatHeaderTextColor: json['chatHeaderTextColor'] as int?,
+        memberListTextColor: json['memberListTextColor'] as int?,
+        chatBubblesTextColor: json['chatBubblesTextColor'] as int?,
+        settingsTextColor: json['settingsTextColor'] as int?,
+        splashTextColor: json['splashTextColor'] as int?,
         chatTextColor: json['chatTextColor'] as int?,
+        profileBackground: json['profileBackground'] as int?,
+        profileText: json['profileText'] as int?,
+        profileSecondaryText: json['profileSecondaryText'] as int?,
+        profileAccent: json['profileAccent'] as int?,
+        profileFont: json['profileFont'] as String? ?? '',
+        profileFontSize: (json['profileFontSize'] as num?)?.toDouble() ?? 15.0,
+        onlineText: json['onlineText'] as int?,
+        offlineText: json['offlineText'] as int?,
+        noticeColor: json['noticeColor'] as int?,
+        noticeText: json['noticeText'] as int?,
+        noticeFont: json['noticeFont'] as String? ?? '',
+        noticeFontSize: (json['noticeFontSize'] as num?)?.toDouble() ?? 12.0,
+        toastBackground: json['toastBackground'] as int?,
+        toastText: json['toastText'] as int?,
+        toastFont: json['toastFont'] as String? ?? '',
+        toastFontSize: (json['toastFontSize'] as num?)?.toDouble() ?? 13.0,
+        kickBackground: json['kickBackground'] as int?,
+        kickBorder: json['kickBorder'] as int?,
+        kickTitle: json['kickTitle'] as int?,
+        kickBody: json['kickBody'] as int?,
+        kickIcon: json['kickIcon'] as int?,
+        kickButton: json['kickButton'] as int?,
+        kickButtonText: json['kickButtonText'] as int?,
+        kickCancel: json['kickCancel'] as int?,
+        kickFont: json['kickFont'] as String? ?? '',
+        kickFontSize: (json['kickFontSize'] as num?)?.toDouble() ?? 15.0,
         socksPort: json['socksPort'] as int? ?? 9050,
         controlPort: json['controlPort'] as int? ?? 9051,
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,

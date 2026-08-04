@@ -20,7 +20,7 @@ import '../lib/services/onion_identity.dart';
 const int hostPort = 18080;
 const int socksPort = 19050;
 const String roomNamecode = 'luna-003-secret';
-const String roomPassword = 'cs12345';
+const String roomPassword = 'pass12345';
 
 int passed = 0;
 int failed = 0;

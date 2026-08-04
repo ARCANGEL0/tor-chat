@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -146,10 +148,56 @@ class ThemeController extends ChangeNotifier {
         s.membersIcon = color?.toARGB32();
       case ColorSetting.chatText:
         s.chatTextColor = color?.toARGB32();
-    }
-    settings = s;
-    await _save();
+      case ColorSetting.mainHeaderText:
+        s.mainHeaderTextColor = color?.toARGB32();
+      case ColorSetting.mainChatsText:
+        s.mainChatsTextColor = color?.toARGB32();
+      case ColorSetting.chatBubblesText:
+        s.chatBubblesTextColor = color?.toARGB32();
+      case ColorSetting.settingsText:
+        s.settingsTextColor = color?.toARGB32();
+  case ColorSetting.splashText:
+    s.splashTextColor = color?.toARGB32();
+  case ColorSetting.profileBackground:
+    s.profileBackground = color?.toARGB32();
+  case ColorSetting.profileText:
+    s.profileText = color?.toARGB32();
+  case ColorSetting.profileSecondaryText:
+    s.profileSecondaryText = color?.toARGB32();
+  case ColorSetting.profileAccent:
+    s.profileAccent = color?.toARGB32();
+  case ColorSetting.onlineText:
+    s.onlineText = color?.toARGB32();
+  case ColorSetting.offlineText:
+    s.offlineText = color?.toARGB32();
+  case ColorSetting.noticeColor:
+    s.noticeColor = color?.toARGB32();
+  case ColorSetting.noticeText:
+    s.noticeText = color?.toARGB32();
+  case ColorSetting.toastBackground:
+    s.toastBackground = color?.toARGB32();
+  case ColorSetting.toastText:
+    s.toastText = color?.toARGB32();
+  case ColorSetting.kickBackground:
+    s.kickBackground = color?.toARGB32();
+  case ColorSetting.kickBorder:
+    s.kickBorder = color?.toARGB32();
+  case ColorSetting.kickTitle:
+    s.kickTitle = color?.toARGB32();
+  case ColorSetting.kickBody:
+    s.kickBody = color?.toARGB32();
+  case ColorSetting.kickIcon:
+    s.kickIcon = color?.toARGB32();
+  case ColorSetting.kickButton:
+    s.kickButton = color?.toARGB32();
+  case ColorSetting.kickButtonText:
+    s.kickButtonText = color?.toARGB32();
+  case ColorSetting.kickCancel:
+    s.kickCancel = color?.toARGB32();
   }
+  settings = s;
+  await _save();
+}
 
   Future<void> setMembersWallpaper(String? wallpaper) async {
     settings = settings.copy()..membersWallpaper = wallpaper;
@@ -178,6 +226,151 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> setChatFontSize(double size) async {
     settings = settings.copy()..chatFontSize = size;
+    await _save();
+  }
+
+  Future<void> setMainHeaderFont(String font) async {
+    settings = settings.copy()..mainHeaderFont = font;
+    await _save();
+  }
+
+  Future<void> setMainChatsFont(String font) async {
+    settings = settings.copy()..mainChatsFont = font;
+    await _save();
+  }
+
+  Future<void> setChatHeaderFont(String font) async {
+    settings = settings.copy()..chatHeaderFont = font;
+    await _save();
+  }
+
+  Future<void> setChatBubblesFont(String font) async {
+    settings = settings.copy()..chatBubblesFont = font;
+    await _save();
+  }
+
+  Future<void> setMemberListFont(String font) async {
+    settings = settings.copy()..memberListFont = font;
+    await _save();
+  }
+
+  Future<void> setSettingsFont(String font) async {
+    settings = settings.copy()..settingsFont = font;
+    await _save();
+  }
+
+  Future<void> setSplashFont(String font) async {
+    settings = settings.copy()..splashFont = font;
+    await _save();
+  }
+
+  Future<void> setMainHeaderFontSize(double size) async {
+    settings = settings.copy()..mainHeaderFontSize = size;
+    await _save();
+  }
+
+  Future<void> setMainChatsFontSize(double size) async {
+    settings = settings.copy()..mainChatsFontSize = size;
+    await _save();
+  }
+
+  Future<void> setChatHeaderFontSize(double size) async {
+    settings = settings.copy()..chatHeaderFontSize = size;
+    await _save();
+  }
+
+  Future<void> setChatBubblesFontSize(double size) async {
+    settings = settings.copy()..chatBubblesFontSize = size;
+    await _save();
+  }
+
+  Future<void> setMemberListFontSize(double size) async {
+    settings = settings.copy()..memberListFontSize = size;
+    await _save();
+  }
+
+  Future<void> setSettingsFontSize(double size) async {
+    settings = settings.copy()..settingsFontSize = size;
+    await _save();
+  }
+
+  Future<void> setSplashFontSize(double size) async {
+    settings = settings.copy()..splashFontSize = size;
+    await _save();
+  }
+
+  Future<void> setProfileFont(String font) async {
+    settings = settings.copy()..profileFont = font;
+    await _save();
+  }
+
+  Future<void> setProfileFontSize(double size) async {
+    settings = settings.copy()..profileFontSize = size;
+    await _save();
+  }
+
+  Future<void> setNoticeFont(String font) async {
+    settings = settings.copy()..noticeFont = font;
+    await _save();
+  }
+
+  Future<void> setNoticeFontSize(double size) async {
+    settings = settings.copy()..noticeFontSize = size;
+    await _save();
+  }
+
+  Future<void> setToastFont(String font) async {
+    settings = settings.copy()..toastFont = font;
+    await _save();
+  }
+
+  Future<void> setToastFontSize(double size) async {
+    settings = settings.copy()..toastFontSize = size;
+    await _save();
+  }
+
+  Future<void> setKickFont(String font) async {
+    settings = settings.copy()..kickFont = font;
+    await _save();
+  }
+
+  Future<void> setKickFontSize(double size) async {
+    settings = settings.copy()..kickFontSize = size;
+    await _save();
+  }
+
+  Future<void> setMainHeaderTextColor(Color? color) async {
+    settings = settings.copy()..mainHeaderTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setMainChatsTextColor(Color? color) async {
+    settings = settings.copy()..mainChatsTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setChatHeaderTextColor(Color? color) async {
+    settings = settings.copy()..chatHeaderTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setMemberListTextColor(Color? color) async {
+    settings = settings.copy()..memberListTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setChatBubblesTextColor(Color? color) async {
+    settings = settings.copy()..chatBubblesTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setSettingsTextColor(Color? color) async {
+    settings = settings.copy()..settingsTextColor = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setSplashTextColor(Color? color) async {
+    settings = settings.copy()..splashTextColor = color?.toARGB32();
     await _save();
   }
 
@@ -227,6 +420,47 @@ class ThemeController extends ChangeNotifier {
       s.membersBackground = _intOrNull(map['membersBackground']);
       s.membersIcon = _intOrNull(map['membersIcon']);
       s.chatTextColor = _intOrNull(map['chatText']);
+      s.mainHeaderTextColor = _intOrNull(map['mainHeaderTextColor']);
+      s.mainChatsTextColor = _intOrNull(map['mainChatsTextColor']);
+      s.chatHeaderTextColor = _intOrNull(map['chatHeaderTextColor']);
+      s.memberListTextColor = _intOrNull(map['memberListTextColor']);
+      s.chatBubblesTextColor = _intOrNull(map['chatBubblesTextColor']);
+      s.settingsTextColor = _intOrNull(map['settingsTextColor']);
+      s.splashTextColor = _intOrNull(map['splashTextColor']);
+      s.profileBackground = _intOrNull(map['profileBackground']);
+      s.profileText = _intOrNull(map['profileText']);
+      s.profileSecondaryText = _intOrNull(map['profileSecondaryText']);
+      s.profileAccent = _intOrNull(map['profileAccent']);
+      s.profileFont = map['profileFont'] as String? ?? '';
+      s.profileFontSize = map['profileFontSize'] is num
+          ? (map['profileFontSize'] as num).toDouble()
+          : 15.0;
+      s.onlineText = _intOrNull(map['onlineText']);
+      s.offlineText = _intOrNull(map['offlineText']);
+      s.noticeColor = _intOrNull(map['noticeColor']);
+      s.noticeText = _intOrNull(map['noticeText']);
+      s.noticeFont = map['noticeFont'] as String? ?? '';
+      s.noticeFontSize = map['noticeFontSize'] is num
+          ? (map['noticeFontSize'] as num).toDouble()
+          : 12.0;
+      s.toastBackground = _intOrNull(map['toastBackground']);
+      s.toastText = _intOrNull(map['toastText']);
+      s.toastFont = map['toastFont'] as String? ?? '';
+      s.toastFontSize = map['toastFontSize'] is num
+          ? (map['toastFontSize'] as num).toDouble()
+          : 13.0;
+      s.kickBackground = _intOrNull(map['kickBackground']);
+      s.kickBorder = _intOrNull(map['kickBorder']);
+      s.kickTitle = _intOrNull(map['kickTitle']);
+      s.kickBody = _intOrNull(map['kickBody']);
+      s.kickIcon = _intOrNull(map['kickIcon']);
+      s.kickButton = _intOrNull(map['kickButton']);
+      s.kickButtonText = _intOrNull(map['kickButtonText']);
+      s.kickCancel = _intOrNull(map['kickCancel']);
+      s.kickFont = map['kickFont'] as String? ?? '';
+      s.kickFontSize = map['kickFontSize'] is num
+          ? (map['kickFontSize'] as num).toDouble()
+          : 15.0;
       settings = s;
       await _save();
       return null;
@@ -288,6 +522,29 @@ enum ColorSetting {
   membersBackground,
   membersIcon,
   chatText,
+  mainHeaderText,
+  mainChatsText,
+  chatBubblesText,
+  settingsText,
+  splashText,
+  profileBackground,
+  profileText,
+  profileSecondaryText,
+  profileAccent,
+  onlineText,
+  offlineText,
+  noticeColor,
+  noticeText,
+  toastBackground,
+  toastText,
+  kickBackground,
+  kickBorder,
+  kickTitle,
+  kickBody,
+  kickIcon,
+  kickButton,
+  kickButtonText,
+  kickCancel,
 }
 
 /// Returns a readable foreground color for use on top of [background].

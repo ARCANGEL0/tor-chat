@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/chat_message.dart';
+import 'app_toast.dart';
 
 /// Fullscreen viewer for a shared photo/video. Shows a small semi-transparent
 /// header with the sender + timestamp and a download button. Downloading uses
@@ -98,15 +99,12 @@ class _MediaViewerScreenState extends State<MediaViewerScreen> {
       );
       if (saved == null) return; // canceled
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved to $saved')),
-        );
+        AppToast.show(context, 'Saved to $saved');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save media: $e')),
-        );
+        AppToast.show(context, 'Could not save media: $e',
+            style: AppToastStyle.error);
       }
     } finally {
       if (mounted) setState(() => _saving = false);

@@ -7,6 +7,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../models/app_settings.dart';
 import '../state/theme_controller.dart';
+import '../widgets/app_toast.dart';
 import 'wallpaper_picker_screen.dart';
 
 /// Full appearance editor: import/export theme JSON, a color field for every
@@ -66,6 +67,10 @@ class ThemeScreen extends StatelessWidget {
             ColorSetting.bubbleMine),
         _ColorFieldSpec('Their bubble', 'Received messages in a chat',
             ColorSetting.bubbleTheirs),
+        _ColorFieldSpec('Notification bubble', 'System tips (e.g. "has connected")',
+            ColorSetting.noticeColor),
+        _ColorFieldSpec('Notification bubble text', 'Text on the system tips',
+            ColorSetting.noticeText),
       ],
     ),
     (
@@ -79,10 +84,54 @@ class ThemeScreen extends StatelessWidget {
             ColorSetting.membersBackground),
         _ColorFieldSpec('Members icon', 'Member list icons',
             ColorSetting.membersIcon),
+        _ColorFieldSpec('Online', 'Members currently in the room',
+            ColorSetting.onlineText),
+        _ColorFieldSpec('Offline', 'Known members not connected',
+            ColorSetting.offlineText),
       ],
     ),
     (
-      'Message area',
+      'Kick card',
+      [
+        _ColorFieldSpec('Kick background', 'The kick confirmation card',
+            ColorSetting.kickBackground),
+        _ColorFieldSpec('Kick border', 'Card outline',
+            ColorSetting.kickBorder),
+        _ColorFieldSpec('Kick title', '"Kick <name>?" heading',
+            ColorSetting.kickTitle),
+        _ColorFieldSpec('Kick body text', 'The explanation text',
+            ColorSetting.kickBody),
+        _ColorFieldSpec('Kick icon', 'The warning icon',
+            ColorSetting.kickIcon),
+        _ColorFieldSpec('Kick button', 'The Kick action button',
+            ColorSetting.kickButton),
+        _ColorFieldSpec('Kick button text', 'Label on the Kick button',
+            ColorSetting.kickButtonText),
+        _ColorFieldSpec('Cancel button', 'Cancel label on the card',
+            ColorSetting.kickCancel),
+      ],
+    ),
+      (
+        'Text colors',
+        [
+          _ColorFieldSpec('Main header text', 'App bar titles',
+              ColorSetting.mainHeaderText),
+          _ColorFieldSpec('Main chats text', 'Room names on home screen',
+              ColorSetting.mainChatsText),
+          _ColorFieldSpec('Chat header text', 'Chat screen top bar text',
+              ColorSetting.chatHeaderText),
+          _ColorFieldSpec('Member list text', 'Member list names',
+              ColorSetting.membersText),
+          _ColorFieldSpec('Chat bubbles text', 'Message text in bubbles',
+              ColorSetting.chatBubblesText),
+          _ColorFieldSpec('Settings text', 'Settings screen text',
+              ColorSetting.settingsText),
+          _ColorFieldSpec('Splash text', 'Boot screen text',
+              ColorSetting.splashText),
+        ],
+      ),
+      (
+        'Message area',
       [
         _ColorFieldSpec('Message area button', 'The send button color',
             ColorSetting.inputButton),
@@ -92,6 +141,28 @@ class ThemeScreen extends StatelessWidget {
             ColorSetting.inputTextarea),
         _ColorFieldSpec('Message area background',
             'The footer behind the text field', ColorSetting.inputBar),
+      ],
+    ),
+    (
+      'Profile card',
+      [
+        _ColorFieldSpec('Profile background', 'The profile card background',
+            ColorSetting.profileBackground),
+        _ColorFieldSpec('Profile text', 'Username on the profile card',
+            ColorSetting.profileText),
+        _ColorFieldSpec('Profile muted text', 'Bio and joined time',
+            ColorSetting.profileSecondaryText),
+        _ColorFieldSpec('Profile accent', 'Avatar ring and profile icons',
+            ColorSetting.profileAccent),
+      ],
+    ),
+    (
+      'Toasts',
+      [
+        _ColorFieldSpec('Toast background', 'Pop-up notices (top-left)',
+            ColorSetting.toastBackground),
+        _ColorFieldSpec('Toast text', 'Text on the pop-up notices',
+            ColorSetting.toastText),
       ],
     ),
   ];
@@ -266,6 +337,171 @@ class ThemeScreen extends StatelessWidget {
                 max: 20,
                 onChanged: tc.setChatFontSize,
               ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Main header font',
+                subtitle: 'App bar titles',
+                current: s.mainHeaderFont,
+                onChanged: tc.setMainHeaderFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Main header text size',
+                value: s.mainHeaderFontSize,
+                min: 12,
+                max: 24,
+                onChanged: tc.setMainHeaderFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Main chats font',
+                subtitle: 'Room names on home screen',
+                current: s.mainChatsFont,
+                onChanged: tc.setMainChatsFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Main chats text size',
+                value: s.mainChatsFontSize,
+                min: 10,
+                max: 20,
+                onChanged: tc.setMainChatsFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Chat header font',
+                subtitle: 'Chat screen top bar',
+                current: s.chatHeaderFont,
+                onChanged: tc.setChatHeaderFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Chat header text size',
+                value: s.chatHeaderFontSize,
+                min: 12,
+                max: 20,
+                onChanged: tc.setChatHeaderFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Chat bubbles font',
+                subtitle: 'Message text inside bubbles',
+                current: s.chatBubblesFont,
+                onChanged: tc.setChatBubblesFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Chat bubbles text size',
+                value: s.chatBubblesFontSize,
+                min: 12,
+                max: 20,
+                onChanged: tc.setChatBubblesFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Member list font',
+                subtitle: 'Names in the member sidebar',
+                current: s.memberListFont,
+                onChanged: tc.setMemberListFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Member list text size',
+                value: s.memberListFontSize,
+                min: 10,
+                max: 18,
+                onChanged: tc.setMemberListFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Settings font',
+                subtitle: 'Settings screen text',
+                current: s.settingsFont,
+                onChanged: tc.setSettingsFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Settings text size',
+                value: s.settingsFontSize,
+                min: 10,
+                max: 18,
+                onChanged: tc.setSettingsFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Splash font',
+                subtitle: 'Boot screen text',
+                current: s.splashFont,
+                onChanged: tc.setSplashFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Splash text size',
+                value: s.splashFontSize,
+                min: 14,
+                max: 28,
+                onChanged: tc.setSplashFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Profile font',
+                subtitle: 'Profile card text',
+                current: s.profileFont,
+                onChanged: tc.setProfileFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Profile text size',
+                value: s.profileFontSize,
+                min: 12,
+                max: 24,
+                onChanged: tc.setProfileFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Notification font',
+                subtitle: 'System tips in the chat',
+                current: s.noticeFont,
+                onChanged: tc.setNoticeFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Notification text size',
+                value: s.noticeFontSize,
+                min: 10,
+                max: 16,
+                onChanged: tc.setNoticeFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Toast font',
+                subtitle: 'Pop-up notices',
+                current: s.toastFont,
+                onChanged: tc.setToastFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Toast text size',
+                value: s.toastFontSize,
+                min: 11,
+                max: 18,
+                onChanged: tc.setToastFontSize,
+              ),
+              const SizedBox(height: 12),
+              _FontRow(
+                label: 'Kick card font',
+                subtitle: 'Kick confirmation card',
+                current: s.kickFont,
+                onChanged: tc.setKickFont,
+              ),
+              const SizedBox(height: 4),
+              _SizeRow(
+                label: 'Kick card text size',
+                value: s.kickFontSize,
+                min: 12,
+                max: 20,
+                onChanged: tc.setKickFontSize,
+              ),
             ],
           );
         },
@@ -319,6 +555,52 @@ class ThemeScreen extends StatelessWidget {
         return s.membersBackground;
       case ColorSetting.membersIcon:
         return s.membersIcon;
+      case ColorSetting.mainHeaderText:
+        return s.mainHeaderTextColor;
+      case ColorSetting.mainChatsText:
+        return s.mainChatsTextColor;
+      case ColorSetting.chatBubblesText:
+        return s.chatBubblesTextColor;
+      case ColorSetting.settingsText:
+        return s.settingsTextColor;
+      case ColorSetting.splashText:
+        return s.splashTextColor;
+      case ColorSetting.profileBackground:
+        return s.profileBackground;
+      case ColorSetting.profileText:
+        return s.profileText;
+      case ColorSetting.profileSecondaryText:
+        return s.profileSecondaryText;
+      case ColorSetting.profileAccent:
+        return s.profileAccent;
+      case ColorSetting.onlineText:
+        return s.onlineText;
+      case ColorSetting.offlineText:
+        return s.offlineText;
+      case ColorSetting.noticeColor:
+        return s.noticeColor;
+      case ColorSetting.noticeText:
+        return s.noticeText;
+      case ColorSetting.toastBackground:
+        return s.toastBackground;
+      case ColorSetting.toastText:
+        return s.toastText;
+      case ColorSetting.kickBackground:
+        return s.kickBackground;
+      case ColorSetting.kickBorder:
+        return s.kickBorder;
+      case ColorSetting.kickTitle:
+        return s.kickTitle;
+      case ColorSetting.kickBody:
+        return s.kickBody;
+      case ColorSetting.kickIcon:
+        return s.kickIcon;
+      case ColorSetting.kickButton:
+        return s.kickButton;
+      case ColorSetting.kickButtonText:
+        return s.kickButtonText;
+      case ColorSetting.kickCancel:
+        return s.kickCancel;
     }
   }
 
@@ -354,14 +636,10 @@ class ThemeScreen extends StatelessWidget {
       );
       if (path == null) return; // canceled
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Theme exported to $path')),
-      );
+      AppToast.show(context, 'Theme exported to $path');
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $e')),
-      );
+      AppToast.show(context, 'Export failed: $e', style: AppToastStyle.error);
     }
   }
 
@@ -380,16 +658,17 @@ class ThemeScreen extends StatelessWidget {
       json = await File(path).readAsString();
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not read that file')),
-      );
+      AppToast.show(context, 'Could not read that file',
+          style: AppToastStyle.error);
       return;
     }
     if (json.trim().isEmpty) return;
     final error = await tc.importThemeJson(json.trim());
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error ?? 'Theme imported ✓')),
+    AppToast.show(
+      context,
+      error ?? 'Theme imported ✓',
+      style: error == null ? AppToastStyle.info : AppToastStyle.error,
     );
   }
 

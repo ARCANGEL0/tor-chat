@@ -10,8 +10,6 @@
 // TorChat - Anonymous P2P Channel via Tor Hidden Service
 // ============================================================
 
-log(`[!] S t a r t i n g  e n c r y p t e d  c h a t`, "GREEN");
-
 const { spawn, execSync } = require("child_process");
 const http = require("http");
 const https = require("https");

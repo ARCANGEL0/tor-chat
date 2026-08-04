@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/room_store.dart';
 import '../state/theme_controller.dart';
 import '../widgets/persona_editor.dart';
-
+import '../widgets/app_toast.dart';
 /// Full-screen profile editor: change your display name, default profile
 /// picture and bio. These are used as the placeholders whenever you create or
 /// join a room (each room can then have its own persona).
@@ -49,9 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await store.setBio(_bioController.text.trim());
     await ThemeController.instance.setAvatar(_avatar);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile saved')),
-    );
+    AppToast.show(context, 'Profile saved');
     Navigator.of(context).pop();
   }
 

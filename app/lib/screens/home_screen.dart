@@ -270,12 +270,12 @@ class _RoomList extends StatelessWidget {
               picture: room.chatPicture,
               fallbackAvatar:
                   room.avatar ?? ThemeController.instance.settings.avatar,
-              initial: room.namecode,
+              initial: room.name,
               size: 46,
               color: _avatarColor(context, room),
             ),
             title: Text(
-              room.namecode,
+              room.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -325,7 +325,7 @@ class _RoomList extends StatelessWidget {
       const Color(0xFF00897B),
     ];
     var hash = 0;
-    for (final c in room.namecode.codeUnits) {
+    for (final c in room.name.codeUnits) {
       hash = (hash * 31 + c) & 0x7fffffff;
     }
     return palette[hash % palette.length];

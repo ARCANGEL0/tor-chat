@@ -8,6 +8,7 @@ import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/persona_editor.dart';
+import '../widgets/app_toast.dart';
 import 'wallpaper_picker_screen.dart';
 
 /// Per-chat settings: the persona (display name, picture, bio) used in THIS
@@ -62,10 +63,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
     );
     if (_chatPicture != null) {
       r.chatPicture = _chatPicture;
+      widget.room.chatPicture = _chatPicture;
       RoomController.instance.room?.chatPicture = _chatPicture;
       final store = await RoomStore.load();
       await store.setRoomChatPicture(r.id, _chatPicture);
     }
+    RoomController.instance.notify();
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -77,9 +80,8 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
       setState(() => _chatPicture = path);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load that picture: $e')),
-      );
+      AppToast.show(context, 'Could not load that picture: $e',
+          style: AppToastStyle.error);
     }
   }
 
@@ -132,7 +134,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 
   void _toast(String text) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    AppToast.show(context, text);
   }
 
   Future<void> _confirmDisconnectEveryone() async {
@@ -171,6 +173,44 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
     _toast('All messages were deleted');
   }
 
+  Future<void> _editPassword() async {
+    final controller = TextEditingController(text: widget.room.password ?? '');
+    final scheme = Theme.of(context).colorScheme;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Change room password'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'Password (leave empty to remove)',
+            hintText: widget.room.password == null
+                ? 'No password currently'
+                : 'Current password: ${widget.room.password}',
+            prefixIcon: const Icon(Icons.lock),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result == null || !mounted) return;
+    widget.room.password = result.isEmpty ? null : result;
+    await RoomController.instance.updatePassword(result.isEmpty ? null : result);
+    if (mounted) {
+      setState(() {});
+      _toast(result.isEmpty ? 'Password removed' : 'Password updated');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -199,7 +239,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                       bioController: _bioController,
                       avatar: _avatar,
                       onAvatarChanged: (v) => setState(() => _avatar = v),
-                      avatarLabel: widget.room.namecode,
+                      avatarLabel: widget.room.name,
                       hint: 'Pick a username for this chat…',
                       bioHint: 'Tell people a bit about yourself…',
                     ),
@@ -231,7 +271,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                           ChatPictureAvatar(
                             picture: _chatPicture,
                             fallbackAvatar: _avatar,
-                            initial: widget.room.namecode,
+                            initial: widget.room.name,
                             size: 48,
                             color: scheme.primary,
                           ),
@@ -272,49 +312,71 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _changeWallpaper,
                   ),
-                  if (widget.room.isOwner) ...[
-                    const Divider(),
-                    const _Header('Room controls'),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                      child: Text(
-                        'These actions apply to everyone in this room.',
-                        style: TextStyle(
-                          color: scheme.onSurfaceVariant,
-                          fontSize: 12,
+if (widget.room.isOwner) ...[
+                      const Divider(),
+                      const _Header('Room controls'),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        child: Text(
+                          'These actions apply to everyone in this room.',
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.person_off_outlined),
-                      title: const Text('Disconnect everyone'),
-                      subtitle:
-                          const Text('Kick everyone out, keep hosting'),
-                      onTap: _confirmDisconnectEveryone,
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.delete_sweep_outlined,
-                          color: scheme.error),
-                      title: Text(
-                        'Delete all media in this room',
-                        style: TextStyle(color: scheme.error),
+                      ListTile(
+                        leading: const Icon(Icons.lock_outline),
+                        title: const Text('Room password'),
+                        subtitle: Text(
+                          widget.room.password == null
+                              ? 'No password set (anyone with the link can join)'
+                              : 'Password protected',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _editPassword,
                       ),
-                      subtitle:
-                          const Text('Remove every photo and video for everyone'),
-                      onTap: _confirmDeleteAllMedia,
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.delete_forever_outlined,
-                          color: scheme.error),
-                      title: Text(
-                        'Delete all messages',
-                        style: TextStyle(color: scheme.error),
+                      const Divider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        child: Text(
+                          'These actions apply to everyone in this room.',
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                      subtitle:
-                          const Text('Erase the whole conversation for everyone'),
-                      onTap: _confirmDeleteAllMessages,
-                    ),
-                  ],
+                      ListTile(
+                        leading: const Icon(Icons.person_off_outlined),
+                        title: const Text('Disconnect everyone'),
+                        subtitle:
+                            const Text('Kick everyone out, keep hosting'),
+                        onTap: _confirmDisconnectEveryone,
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.delete_sweep_outlined,
+                            color: scheme.error),
+                        title: Text(
+                          'Delete all media in this room',
+                          style: TextStyle(color: scheme.error),
+                        ),
+                        subtitle:
+                            const Text('Remove every photo and video for everyone'),
+                        onTap: _confirmDeleteAllMedia,
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.delete_forever_outlined,
+                            color: scheme.error),
+                        title: Text(
+                          'Delete all messages',
+                          style: TextStyle(color: scheme.error),
+                        ),
+                        subtitle:
+                            const Text('Erase the whole conversation for everyone'),
+                        onTap: _confirmDeleteAllMessages,
+                      ),
+                    ],
                 ],
               ),
       ),

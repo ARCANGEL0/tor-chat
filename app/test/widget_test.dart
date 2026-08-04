@@ -52,7 +52,7 @@ void main() {
 
   group('OnionIdentity', () {
     const name = 'luna-003-secret';
-    const pass = 'cs12345';
+    const pass = 'pass12345';
     // Verified against a real Tor daemon: the hostname file matches this.
     const expectedOnion = 'p4ijvyjduddyugdkhqajc2gb3omh6hnatxhyotmjvqmrr2xtgzhwobid.onion';
 
