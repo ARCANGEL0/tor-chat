@@ -1,12 +1,12 @@
-/// A saved chat room. Rooms are either hosted by this device (`isOwner`) or
-/// remote rooms the user joined with a namecode + password.
+/// A saved chat room. Identified by its `.onion` address.
+/// Can be hosted by this device (`isOwner`) or joined remotely.
 class Room {
-  final String id;
-  String namecode;
-  String onion;
-  String password;
+  final String id; // internal ID (UUID or onion)
+  String name; // display name (e.g., "Alice's Chat")
+  String onion; // .onion address - primary identifier
+  String? password; // optional password for access
   bool isOwner;
-  String username;
+  String username; // your username in this room
   DateTime createdAt;
   String? lastMessage;
   DateTime? lastMessageAt;
@@ -26,9 +26,9 @@ class Room {
 
   Room({
     required this.id,
-    required this.namecode,
+    required this.name,
     required this.onion,
-    required this.password,
+    this.password,
     required this.isOwner,
     required this.username,
     required this.createdAt,
@@ -42,7 +42,7 @@ class Room {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'namecode': namecode,
+        'name': name,
         'onion': onion,
         'password': password,
         'isOwner': isOwner,
@@ -58,9 +58,9 @@ class Room {
 
   factory Room.fromJson(Map<String, dynamic> json) => Room(
         id: json['id'] as String,
-        namecode: json['namecode'] as String,
+        name: json['name'] as String,
         onion: json['onion'] as String,
-        password: json['password'] as String,
+        password: json['password'] as String?,
         isOwner: json['isOwner'] as bool? ?? false,
         username: json['username'] as String? ?? '',
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
