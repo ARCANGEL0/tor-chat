@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// One surface shape: rounded corners, or a bevel (chamfered corner).
@@ -379,4 +381,65 @@ enum ThemeStyle {
         ThemeStyle.bladerunner => 1.2,
         _ => 0,
       };
+
+  /// Outline used by the template thumbnail on the Theme screen.
+  Path previewPath(Rect rect) {
+    switch (this) {
+      case ThemeStyle.def:
+        return Path()..addOval(rect);
+      case ThemeStyle.midnight:
+        return _blobPath(rect);
+      case ThemeStyle.matrix:
+        return Path()..addRect(rect);
+      case ThemeStyle.lain:
+        return Path()
+          ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(3)));
+      case ThemeStyle.cyberpunk:
+        return _bevelPath(
+          rect,
+          const BevelSpec(10, topLeft: true, bottomRight: true),
+        );
+      case ThemeStyle.bladerunner:
+        return _bevelPath(
+          rect,
+          const BevelSpec(5, topRight: true, bottomLeft: true),
+        );
+    }
+  }
+}
+
+/// Wobbly "cute blob" used by the Midnight template thumbnail.
+Path _blobPath(Rect rect) {
+  const n = 9;
+  final c = rect.center;
+  final base = rect.shortestSide / 2;
+  final pts = <Offset>[];
+  for (var i = 0; i < n; i++) {
+    final a = 2 * math.pi * i / n;
+    final amp = 0.18 * math.sin(3 * a + 0.7) + 0.09 * math.cos(5 * a + 1.3);
+    final rr = base * (1 + amp);
+    pts.add(Offset(c.dx + rr * math.cos(a), c.dy + rr * math.sin(a)));
+  }
+  final path = Path()..moveTo(pts[0].dx, pts[0].dy);
+  for (var i = 0; i < n; i++) {
+    final p0 = pts[i];
+    final p1 = pts[(i + 1) % n];
+    final mid = Offset((p0.dx + p1.dx) / 2, (p0.dy + p1.dy) / 2);
+    path.quadraticBezierTo(p0.dx, p0.dy, mid.dx, mid.dy);
+  }
+  path.close();
+  return path;
+}
+
+/// Input field border for a style: neon outline on Matrix, clean rounded
+/// outline elsewhere.
+OutlineInputBorder inputFieldBorder(ThemeStyle style, double radius,
+    {double width = 1.2}) {
+  final r = style == ThemeStyle.matrix ? 0.0 : radius;
+  return OutlineInputBorder(
+    borderRadius: BorderRadius.circular(r),
+    borderSide: style == ThemeStyle.matrix
+        ? BorderSide(color: const Color(0xFF00FF41), width: width)
+        : BorderSide.none,
+  );
 }

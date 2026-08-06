@@ -17,13 +17,13 @@ Future<void> main() async {
   // Initialize sticker service and auto-import WhatsApp stickers
   await StickerService.instance.init();
   StickerService.instance.maybeAutoImportWhatsApp();
+  runApp(const OnionChatApp());
   // Notifications are non-essential: never let a plugin failure block startup.
   try {
     await NotificationService.instance.init();
   } catch (e) {
     debugPrint('notification init failed: $e');
   }
-  runApp(const OnionChatApp());
   // Android 13+ runtime permission prompt (non-blocking).
   try {
     await NotificationService.instance.ensurePermission();
@@ -113,20 +113,41 @@ class _OnionChatAppState extends State<OnionChatApp>
         clipBehavior: Clip.antiAlias,
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(shape: style.outlinedButtonShape),
+        style: style == ThemeStyle.matrix
+            ? FilledButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: const Color(0xFF00FF41),
+                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+                shape: style.outlinedButtonShape,
+              )
+            : FilledButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(shape: style.outlinedButtonShape),
+        style: style == ThemeStyle.matrix
+            ? OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF00FF41),
+                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+                shape: style.outlinedButtonShape,
+              )
+            : OutlinedButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(shape: style.outlinedButtonShape),
+        style: style == ThemeStyle.matrix
+            ? ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: const Color(0xFF00FF41),
+                elevation: 0,
+                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+                shape: style.outlinedButtonShape,
+              )
+            : ElevatedButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: style.inputShape.roundedOrTight,
-          borderSide: BorderSide.none,
-        ),
+        filled: style != ThemeStyle.matrix,
+        fillColor: style == ThemeStyle.matrix ? Colors.transparent : null,
+        border: _inputBorder(style, width: 1.2),
+        enabledBorder: _inputBorder(style, width: 1.2),
+        focusedBorder: _inputBorder(style, width: 1.8),
       ),
       extensions: [
         ChatTheme(
@@ -150,6 +171,17 @@ class _OnionChatAppState extends State<OnionChatApp>
       );
     }
     return theme;
+  }
+
+  static OutlineInputBorder? _inputBorder(ThemeStyle style, {double width = 1.2}) {
+    final radius = style.inputShape.roundedOrTight;
+    if (style == ThemeStyle.matrix) {
+      return OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: const Color(0xFF00FF41), width: width),
+      );
+    }
+    return OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none);
   }
 
   @override

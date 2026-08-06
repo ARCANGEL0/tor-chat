@@ -36,135 +36,268 @@ class ThemeScreen extends StatelessWidget {
     (
       'General',
       [
-        _ColorFieldSpec('Buttons', 'Primary buttons, toggles and highlights',
-            ColorSetting.buttons),
-        _ColorFieldSpec('Header', 'Top bars in every screen',
-            ColorSetting.header),
-        _ColorFieldSpec('Header text', 'Text on the top bars',
-            ColorSetting.headerText),
-        _ColorFieldSpec('Background', 'Main page background color',
-            ColorSetting.background),
-        _ColorFieldSpec('Main page text', 'Text on the main pages',
-            ColorSetting.mainText),
-        _ColorFieldSpec('Secondary text', 'Muted text, hints and labels',
-            ColorSetting.secondaryText),
-        _ColorFieldSpec('Boot screen', 'Background while the app starts',
-            ColorSetting.splashBackground),
-        _ColorFieldSpec('Logo', 'Tint applied over the app logo',
-            ColorSetting.logo),
+        _ColorFieldSpec(
+          'Buttons',
+          'Primary buttons, toggles and highlights',
+          ColorSetting.buttons,
+        ),
+        _ColorFieldSpec(
+          'Header',
+          'Top bars in every screen',
+          ColorSetting.header,
+        ),
+        _ColorFieldSpec(
+          'Header text',
+          'Text on the top bars',
+          ColorSetting.headerText,
+        ),
+        _ColorFieldSpec(
+          'Background',
+          'Main page background color',
+          ColorSetting.background,
+        ),
+        _ColorFieldSpec(
+          'Main page text',
+          'Text on the main pages',
+          ColorSetting.mainText,
+        ),
+        _ColorFieldSpec(
+          'Secondary text',
+          'Muted text, hints and labels',
+          ColorSetting.secondaryText,
+        ),
+        _ColorFieldSpec(
+          'Boot screen',
+          'Background while the app starts',
+          ColorSetting.splashBackground,
+        ),
+        _ColorFieldSpec(
+          'Logo',
+          'Tint applied over the app logo',
+          ColorSetting.logo,
+        ),
       ],
     ),
     (
       'Chat',
       [
-        _ColorFieldSpec('Chat header', 'Top bar on the chat screen',
-            ColorSetting.chatHeader),
-        _ColorFieldSpec('Chat header text', 'Text on the chat top bar',
-            ColorSetting.chatHeaderText),
-        _ColorFieldSpec('Chat background', 'Chat screen behind messages',
-            ColorSetting.chatBackground),
-        _ColorFieldSpec('Chat text', 'Message text color in a chat',
-            ColorSetting.chatText),
-        _ColorFieldSpec('My bubble', 'Your messages in a chat',
-            ColorSetting.bubbleMine),
-        _ColorFieldSpec('Their bubble', 'Received messages in a chat',
-            ColorSetting.bubbleTheirs),
-        _ColorFieldSpec('Notification bubble', 'System tips (e.g. "has connected")',
-            ColorSetting.noticeColor),
-        _ColorFieldSpec('Notification bubble text', 'Text on the system tips',
-            ColorSetting.noticeText),
+        _ColorFieldSpec(
+          'Chat header',
+          'Top bar on the chat screen',
+          ColorSetting.chatHeader,
+        ),
+        _ColorFieldSpec(
+          'Chat header text',
+          'Text on the chat top bar',
+          ColorSetting.chatHeaderText,
+        ),
+        _ColorFieldSpec(
+          'Chat background',
+          'Chat screen behind messages',
+          ColorSetting.chatBackground,
+        ),
+        _ColorFieldSpec(
+          'Chat text',
+          'Message text color in a chat',
+          ColorSetting.chatText,
+        ),
+        _ColorFieldSpec(
+          'My bubble',
+          'Your messages in a chat',
+          ColorSetting.bubbleMine,
+        ),
+        _ColorFieldSpec(
+          'Their bubble',
+          'Received messages in a chat',
+          ColorSetting.bubbleTheirs,
+        ),
+        _ColorFieldSpec(
+          'Notification bubble',
+          'System tips (e.g. "has connected")',
+          ColorSetting.noticeColor,
+        ),
+        _ColorFieldSpec(
+          'Notification bubble text',
+          'Text on the system tips',
+          ColorSetting.noticeText,
+        ),
       ],
     ),
     (
       'Member list',
       [
-        _ColorFieldSpec('Members text', 'Member list names',
-            ColorSetting.membersText),
-        _ColorFieldSpec('Members header', 'Member list title',
-            ColorSetting.membersHeader),
-        _ColorFieldSpec('Members background', 'Member list panel',
-            ColorSetting.membersBackground),
-        _ColorFieldSpec('Members icon', 'Member list icons',
-            ColorSetting.membersIcon),
-        _ColorFieldSpec('Online', 'Members currently in the room',
-            ColorSetting.onlineText),
-        _ColorFieldSpec('Offline', 'Known members not connected',
-            ColorSetting.offlineText),
+        _ColorFieldSpec(
+          'Members text',
+          'Member list names',
+          ColorSetting.membersText,
+        ),
+        _ColorFieldSpec(
+          'Members header',
+          'Member list title',
+          ColorSetting.membersHeader,
+        ),
+        _ColorFieldSpec(
+          'Members background',
+          'Member list panel',
+          ColorSetting.membersBackground,
+        ),
+        _ColorFieldSpec(
+          'Members icon',
+          'Member list icons',
+          ColorSetting.membersIcon,
+        ),
+        _ColorFieldSpec(
+          'Online',
+          'Members currently in the room',
+          ColorSetting.onlineText,
+        ),
+        _ColorFieldSpec(
+          'Offline',
+          'Known members not connected',
+          ColorSetting.offlineText,
+        ),
       ],
     ),
     (
       'Kick card',
       [
-        _ColorFieldSpec('Kick background', 'The kick confirmation card',
-            ColorSetting.kickBackground),
-        _ColorFieldSpec('Kick border', 'Card outline',
-            ColorSetting.kickBorder),
-        _ColorFieldSpec('Kick title', '"Kick <name>?" heading',
-            ColorSetting.kickTitle),
-        _ColorFieldSpec('Kick body text', 'The explanation text',
-            ColorSetting.kickBody),
-        _ColorFieldSpec('Kick icon', 'The warning icon',
-            ColorSetting.kickIcon),
-        _ColorFieldSpec('Kick button', 'The Kick action button',
-            ColorSetting.kickButton),
-        _ColorFieldSpec('Kick button text', 'Label on the Kick button',
-            ColorSetting.kickButtonText),
-        _ColorFieldSpec('Cancel button', 'Cancel label on the card',
-            ColorSetting.kickCancel),
+        _ColorFieldSpec(
+          'Kick background',
+          'The kick confirmation card',
+          ColorSetting.kickBackground,
+        ),
+        _ColorFieldSpec('Kick border', 'Card outline', ColorSetting.kickBorder),
+        _ColorFieldSpec(
+          'Kick title',
+          '"Kick <name>?" heading',
+          ColorSetting.kickTitle,
+        ),
+        _ColorFieldSpec(
+          'Kick body text',
+          'The explanation text',
+          ColorSetting.kickBody,
+        ),
+        _ColorFieldSpec('Kick icon', 'The warning icon', ColorSetting.kickIcon),
+        _ColorFieldSpec(
+          'Kick button',
+          'The Kick action button',
+          ColorSetting.kickButton,
+        ),
+        _ColorFieldSpec(
+          'Kick button text',
+          'Label on the Kick button',
+          ColorSetting.kickButtonText,
+        ),
+        _ColorFieldSpec(
+          'Cancel button',
+          'Cancel label on the card',
+          ColorSetting.kickCancel,
+        ),
       ],
     ),
-      (
-        'Text colors',
-        [
-          _ColorFieldSpec('Main header text', 'App bar titles',
-              ColorSetting.mainHeaderText),
-          _ColorFieldSpec('Main chats text', 'Room names on home screen',
-              ColorSetting.mainChatsText),
-          _ColorFieldSpec('Chat header text', 'Chat screen top bar text',
-              ColorSetting.chatHeaderText),
-          _ColorFieldSpec('Member list text', 'Member list names',
-              ColorSetting.membersText),
-          _ColorFieldSpec('Chat bubbles text', 'Message text in bubbles',
-              ColorSetting.chatBubblesText),
-          _ColorFieldSpec('Settings text', 'Settings screen text',
-              ColorSetting.settingsText),
-          _ColorFieldSpec('Splash text', 'Boot screen text',
-              ColorSetting.splashText),
-        ],
-      ),
-      (
-        'Message area',
+    (
+      'Text colors',
       [
-        _ColorFieldSpec('Message area button', 'The send button color',
-            ColorSetting.inputButton),
-        _ColorFieldSpec('Message attachment', 'The attach (image) button color',
-            ColorSetting.inputAttach),
-        _ColorFieldSpec('Message area textarea', 'The text field fill color',
-            ColorSetting.inputTextarea),
-        _ColorFieldSpec('Message area background',
-            'The footer behind the text field', ColorSetting.inputBar),
+        _ColorFieldSpec(
+          'Main header text',
+          'App bar titles',
+          ColorSetting.mainHeaderText,
+        ),
+        _ColorFieldSpec(
+          'Main chats text',
+          'Room names on home screen',
+          ColorSetting.mainChatsText,
+        ),
+        _ColorFieldSpec(
+          'Chat header text',
+          'Chat screen top bar text',
+          ColorSetting.chatHeaderText,
+        ),
+        _ColorFieldSpec(
+          'Member list text',
+          'Member list names',
+          ColorSetting.membersText,
+        ),
+        _ColorFieldSpec(
+          'Chat bubbles text',
+          'Message text in bubbles',
+          ColorSetting.chatBubblesText,
+        ),
+        _ColorFieldSpec(
+          'Settings text',
+          'Settings screen text',
+          ColorSetting.settingsText,
+        ),
+        _ColorFieldSpec(
+          'Splash text',
+          'Boot screen text',
+          ColorSetting.splashText,
+        ),
+      ],
+    ),
+    (
+      'Message area',
+      [
+        _ColorFieldSpec(
+          'Message area button',
+          'The send button color',
+          ColorSetting.inputButton,
+        ),
+        _ColorFieldSpec(
+          'Message attachment',
+          'The attach (image) button color',
+          ColorSetting.inputAttach,
+        ),
+        _ColorFieldSpec(
+          'Message area textarea',
+          'The text field fill color',
+          ColorSetting.inputTextarea,
+        ),
+        _ColorFieldSpec(
+          'Message area background',
+          'The footer behind the text field',
+          ColorSetting.inputBar,
+        ),
       ],
     ),
     (
       'Profile card',
       [
-        _ColorFieldSpec('Profile background', 'The profile card background',
-            ColorSetting.profileBackground),
-        _ColorFieldSpec('Profile text', 'Username on the profile card',
-            ColorSetting.profileText),
-        _ColorFieldSpec('Profile muted text', 'Bio and joined time',
-            ColorSetting.profileSecondaryText),
-        _ColorFieldSpec('Profile accent', 'Avatar ring and profile icons',
-            ColorSetting.profileAccent),
+        _ColorFieldSpec(
+          'Profile background',
+          'The profile card background',
+          ColorSetting.profileBackground,
+        ),
+        _ColorFieldSpec(
+          'Profile text',
+          'Username on the profile card',
+          ColorSetting.profileText,
+        ),
+        _ColorFieldSpec(
+          'Profile muted text',
+          'Bio and joined time',
+          ColorSetting.profileSecondaryText,
+        ),
+        _ColorFieldSpec(
+          'Profile accent',
+          'Avatar ring and profile icons',
+          ColorSetting.profileAccent,
+        ),
       ],
     ),
     (
       'Toasts',
       [
-        _ColorFieldSpec('Toast background', 'Pop-up notices (top-left)',
-            ColorSetting.toastBackground),
-        _ColorFieldSpec('Toast text', 'Text on the pop-up notices',
-            ColorSetting.toastText),
+        _ColorFieldSpec(
+          'Toast background',
+          'Pop-up notices (top-left)',
+          ColorSetting.toastBackground,
+        ),
+        _ColorFieldSpec(
+          'Toast text',
+          'Text on the pop-up notices',
+          ColorSetting.toastText,
+        ),
       ],
     ),
   ];
@@ -212,17 +345,20 @@ class ThemeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 16,
-                runSpacing: 18,
-                children: [
-                  for (final t in themeTemplates)
-                    _TemplateCard(
-                      template: t,
-                      selected: ThemeStyle.fromId(s.themeStyle) == t.style,
-                      onTap: () => tc.applyTemplate(t),
-                    ),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final t in themeTemplates) ...[
+                      _TemplateCard(
+                        template: t,
+                        selected: ThemeStyle.fromId(s.themeStyle) == t.style,
+                        onTap: () => tc.applyTemplate(t),
+                      ),
+                      const SizedBox(width: 14),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               const _SectionTitle('Colors'),
@@ -264,30 +400,6 @@ class ThemeScreen extends StatelessWidget {
                   icon: const Icon(Icons.restart_alt),
                   label: const Text('Reset to defaults'),
                 ),
-              ),
-              const SizedBox(height: 28),
-              const _SectionTitle('Appearance'),
-              const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: AppSettings.modeSystem,
-                    label: Text('System'),
-                    icon: Icon(Icons.brightness_auto),
-                  ),
-                  ButtonSegment(
-                    value: AppSettings.modeLight,
-                    label: Text('Light'),
-                    icon: Icon(Icons.light_mode),
-                  ),
-                  ButtonSegment(
-                    value: AppSettings.modeDark,
-                    label: Text('Dark'),
-                    icon: Icon(Icons.dark_mode),
-                  ),
-                ],
-                selected: {s.themeMode},
-                onSelectionChanged: (sel) => tc.setThemeMode(sel.first),
               ),
               const SizedBox(height: 28),
               const _SectionTitle('Backgrounds'),
@@ -684,8 +796,11 @@ class ThemeScreen extends StatelessWidget {
       json = await File(path).readAsString();
     } catch (_) {
       if (!context.mounted) return;
-      AppToast.show(context, 'Could not read that file',
-          style: AppToastStyle.error);
+      AppToast.show(
+        context,
+        'Could not read that file',
+        style: AppToastStyle.error,
+      );
       return;
     }
     if (json.trim().isEmpty) return;
@@ -704,7 +819,8 @@ class ThemeScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Reset appearance?'),
         content: const Text(
-            'This restores every default color, wallpaper and profile picture.'),
+          'This restores every default color, wallpaper and profile picture.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -723,7 +839,7 @@ class ThemeScreen extends StatelessWidget {
 
 const _canceled = Object();
 
-/// A circular preview thumbnail for one theme template. Tapping applies the
+/// A preview thumbnail for one theme template. Tapping applies the
 /// template's colors and shape style.
 class _TemplateCard extends StatelessWidget {
   final ThemeTemplate template;
@@ -741,59 +857,52 @@ class _TemplateCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
-      customBorder: const CircleBorder(),
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 74,
-            height: 74,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? scheme.primary : Colors.transparent,
-                width: selected ? 3 : 1,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: scheme.primary.withValues(alpha: 0.45),
-                        blurRadius: 12,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                template.imageAsset,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => ColoredBox(
-                  color: scheme.primary.withValues(alpha: 0.25),
-                  child: Icon(
-                    Icons.palette_outlined,
-                    color: scheme.primary,
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipPath(
+                  clipper: _PreviewClipper(template.style),
+                  child: Image.asset(
+                    template.imageAsset,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => ColoredBox(
+                      color: scheme.primary.withValues(alpha: 0.25),
+                      child: Icon(Icons.palette_outlined, color: scheme.primary),
+                    ),
                   ),
                 ),
-              ),
+                IgnorePointer(
+                  child: CustomPaint(
+                    painter: _PreviewFramePainter(
+                      style: template.style,
+                      selected: selected,
+                      primary: scheme.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           SizedBox(
-            width: 88,
+            width: 60,
             child: Text(
               template.name,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
-                height: 1.15,
+                fontSize: 11,
+                height: 1.1,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected
-                    ? scheme.primary
-                    : scheme.onSurfaceVariant,
+                color: selected ? scheme.primary : scheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -801,6 +910,98 @@ class _TemplateCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PreviewClipper extends CustomClipper<Path> {
+  final ThemeStyle style;
+
+  const _PreviewClipper(this.style);
+
+  @override
+  Path getClip(Size size) => style.previewPath(Offset.zero & size);
+
+  @override
+  bool shouldReclip(_PreviewClipper oldClipper) => oldClipper.style != style;
+}
+
+class _PreviewFramePainter extends CustomPainter {
+  final ThemeStyle style;
+  final bool selected;
+  final Color primary;
+
+  const _PreviewFramePainter({
+    required this.style,
+    required this.selected,
+    required this.primary,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final path = style.previewPath(rect);
+    final neon = switch (style) {
+      ThemeStyle.matrix => const Color(0xFF00FF41),
+      ThemeStyle.bladerunner => const Color(0xFFFFB347),
+      ThemeStyle.lain => const Color(0xFF00FFFF),
+      _ => null,
+    };
+    if (neon != null) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = selected ? 3 : 1.3
+          ..color = neon.withValues(alpha: selected ? 0.95 : 0.6),
+      );
+      if (selected) {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 10
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7)
+            ..color = neon.withValues(alpha: 0.45),
+        );
+      }
+    } else if (selected) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..color = primary,
+      );
+    }
+    final tears = switch (style) {
+      ThemeStyle.bladerunner => 2,
+      ThemeStyle.lain => 4,
+      _ => 0,
+    };
+    if (tears > 0) {
+      canvas.save();
+      canvas.clipPath(path);
+      final paint = Paint()
+        ..color = (style.glowColor ?? primary).withValues(alpha: 0.16);
+      for (var i = 0; i < tears; i++) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            i.isEven ? -size.width * 0.08 : size.width * 0.06,
+            size.height * (0.2 + 0.18 * i),
+            size.width,
+            i.isEven ? 4 : 3,
+          ),
+          paint,
+        );
+      }
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PreviewFramePainter oldDelegate) =>
+      oldDelegate.style != style ||
+      oldDelegate.selected != selected ||
+      oldDelegate.primary != primary;
 }
 
 class _ColorFieldSpec {
@@ -1035,9 +1236,9 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
     );
   }
 }
@@ -1049,6 +1250,11 @@ const _fontOptions = <(String, String)>[
   ('monospace', 'monospace'),
   ('sans-serif-condensed', 'sans-serif-condensed'),
   ('sans-serif-medium', 'sans-serif-medium'),
+  ('Orbitron', 'Orbitron'),
+  ('Comfortaa', 'Comfortaa'),
+  ('Share Tech Mono', 'ShareTechMono'),
+  ('VT323', 'VT323'),
+  ('Michroma', 'Michroma'),
 ];
 
 class _FontRow extends StatelessWidget {
@@ -1080,8 +1286,10 @@ class _FontRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    label,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -1136,10 +1344,7 @@ class _SizeRow extends StatelessWidget {
             width: 150,
             child: Text(
               label,
-              style: TextStyle(
-                color: scheme.onSurfaceVariant,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
             ),
           ),
           Expanded(

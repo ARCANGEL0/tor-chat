@@ -6,6 +6,7 @@ import '../models/room.dart';
 import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import '../widgets/persona_editor.dart';
 import '../widgets/tor_progress_card.dart';
 import '../services/tor_engine.dart';
@@ -284,6 +285,12 @@ class _ConnectScreenState extends State<ConnectScreen> {
   }
 
   Widget _buildForm(ColorScheme scheme) {
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final matrix = style == ThemeStyle.matrix;
+    final fieldBorder = inputFieldBorder(style, 14,
+        width: style.borderWidth > 0 ? style.borderWidth : 1.2);
+    final fieldFocused = inputFieldBorder(style, 14, width: 1.8);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -321,7 +328,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
             labelText: '.onion address',
             hintText: 'e.g. abc123def456ghi789jkl.onion',
             prefixIcon: const Icon(Icons.link),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+            border: fieldBorder,
+            enabledBorder: fieldBorder,
+            focusedBorder: fieldFocused,
           ),
         ),
         const SizedBox(height: 16),
@@ -339,7 +348,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
               icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility),
               onPressed: () => setState(() => _showPass = !_showPass),
             ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+            border: fieldBorder,
+            enabledBorder: fieldBorder,
+            focusedBorder: fieldFocused,
           ),
         ),
         const SizedBox(height: 16),
@@ -358,8 +369,14 @@ class _ConnectScreenState extends State<ConnectScreen> {
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: matrix
+                  ? BorderRadius.zero
+                  : const BorderRadius.all(Radius.circular(14)),
             ),
+            foregroundColor: matrix ? const Color(0xFF00FF41) : null,
+            side: matrix
+                ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
+                : null,
           ),
           icon: const Icon(Icons.qr_code_scanner),
           label: const Text('Read QR code'),
@@ -392,8 +409,15 @@ class _ConnectScreenState extends State<ConnectScreen> {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: matrix
+                  ? BorderRadius.zero
+                  : const BorderRadius.all(Radius.circular(16)),
             ),
+            backgroundColor: matrix ? Colors.transparent : null,
+            foregroundColor: matrix ? const Color(0xFF00FF41) : null,
+            side: matrix
+                ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
+                : null,
           ),
           icon: const Icon(Icons.call_merge_rounded),
           label: const Text(

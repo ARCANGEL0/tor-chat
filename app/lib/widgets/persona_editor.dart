@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../screens/avatar_picker_screen.dart';
+import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import 'profile_avatar.dart';
 
 /// A combined "who am I" editor: a tappable profile picture (opens the picker),
@@ -36,6 +38,17 @@ class PersonaEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final matrix = style == ThemeStyle.matrix;
+    final radius = 14.0;
+    final border = inputFieldBorder(style, radius, width: 1.2);
+    final focused = matrix
+        ? inputFieldBorder(style, radius, width: 1.8)
+        : OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: BorderSide(color: scheme.primary, width: 2),
+          );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -60,11 +73,19 @@ class PersonaEditor extends StatelessWidget {
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: scheme.primary,
-                        border: Border.all(color: scheme.surface, width: 2),
+                        color: matrix ? Colors.transparent : scheme.primary,
+                        border: Border.all(
+                          color: matrix
+                              ? const Color(0xFF00FF41)
+                              : scheme.surface,
+                          width: matrix ? 1 : 2,
+                        ),
                       ),
-                      child: Icon(Icons.photo_camera,
-                          size: 14, color: scheme.onPrimary),
+                      child: Icon(
+                        Icons.photo_camera,
+                        size: 14,
+                        color: matrix ? const Color(0xFF00FF41) : scheme.onPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -85,23 +106,13 @@ class PersonaEditor extends StatelessWidget {
                   prefixIcon: const Icon(Icons.person),
                   counterText: '',
                   // Disable the default underline to avoid double line
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      ),
-                  ),
+                  filled: !matrix,
+                  fillColor: matrix
+                      ? Colors.transparent
+                      : scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  border: border,
+                  enabledBorder: border,
+                  focusedBorder: focused,
                 ),
               ),
             ),
@@ -124,23 +135,13 @@ class PersonaEditor extends StatelessWidget {
               prefixIcon: const Icon(Icons.notes_outlined),
               counterText: '',
               // Disable the default underline to avoid double line
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  ),
-              ),
+              filled: !matrix,
+              fillColor: matrix
+                  ? Colors.transparent
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              border: border,
+              enabledBorder: border,
+              focusedBorder: focused,
             ),
           ),
         ],

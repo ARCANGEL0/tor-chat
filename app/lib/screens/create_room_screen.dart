@@ -11,6 +11,7 @@ import '../models/room.dart';
 import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import '../../utils/namegen.dart';
 import '../services/onion_identity.dart';
 import '../widgets/persona_editor.dart';
@@ -325,6 +326,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   }
 
   Widget _buildForm(ColorScheme scheme) {
+    final matrix =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle) ==
+            ThemeStyle.matrix;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -400,6 +404,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             picture: _chatPicture,
             onTap: _uploadChatPicture,
             onRandomize: _randomizeChatPicture,
+            matrix: matrix,
           ).animate().fadeIn(duration: 250.ms, delay: 350.ms),
           const SizedBox(height: 24),
           if (_error != null)
@@ -427,9 +432,18 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             onPressed: _creating ? null : _create,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              shape: matrix
+                  ? const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    )
+                  : RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+              backgroundColor: matrix ? Colors.transparent : null,
+              foregroundColor: matrix ? const Color(0xFF00FF41) : null,
+              side: matrix
+                  ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
+                  : null,
             ),
             icon: const Icon(Icons.add_chart),
             label: const Text(
@@ -538,11 +552,13 @@ class _ChatPicturePicker extends StatelessWidget {
   final String? picture;
   final VoidCallback onTap;
   final VoidCallback onRandomize;
+  final bool matrix;
 
   const _ChatPicturePicker({
     required this.picture,
     required this.onTap,
     required this.onRandomize,
+    required this.matrix,
   });
 
   @override
@@ -583,26 +599,48 @@ class _ChatPicturePicker extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: scheme.surface, width: 2),
-                  ),
+                  decoration: matrix
+                      ? BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: const Color(0xFF00FF41), width: 1),
+                        )
+                      : BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: scheme.surface, width: 2),
+                        ),
                   child: IconButton(
-                    icon: const Icon(Icons.shuffle, color: Colors.white, size: 20),
+                    icon: Icon(
+                      Icons.shuffle,
+                      color: matrix ? const Color(0xFF00FF41) : Colors.white,
+                      size: 20,
+                    ),
                     onPressed: onRandomize,
                     tooltip: 'Random picture',
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: scheme.surface, width: 2),
-                  ),
+                  decoration: matrix
+                      ? BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: const Color(0xFF00FF41), width: 1),
+                        )
+                      : BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: scheme.surface, width: 2),
+                        ),
                   child: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                    icon: Icon(
+                      Icons.edit,
+                      color: matrix ? const Color(0xFF00FF41) : Colors.white,
+                      size: 20,
+                    ),
                     onPressed: onTap,
                     tooltip: 'Upload picture',
                   ),

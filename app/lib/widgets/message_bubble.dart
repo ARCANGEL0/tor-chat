@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'dart:math' as math;
+
 import '../models/chat_message.dart';
 import '../services/chat_protocol.dart';
 import '../state/chat_theme.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import 'media_content.dart';
 import 'profile_avatar.dart';
 import 'shape_box.dart';
@@ -50,6 +53,10 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (message.isSystem) return _SystemNotice(text: message.text);
+
+    if (ChatTheme.of(context).style == ThemeStyle.matrix) {
+      return _buildMatrix(context);
+    }
 
     final scheme = Theme.of(context).colorScheme;
     final chat = ChatTheme.of(context);
@@ -209,6 +216,93 @@ class MessageBubble extends StatelessWidget {
   }
 
   bool get _hasMenu => onCopy != null || onEdit != null || onDelete != null;
+
+  Widget _buildMatrix(BuildContext context) {
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final mine = message.mine;
+    final neon = const Color(0xFF00FF41);
+    final chatTextColor = s.chatTextColor != null
+        ? Color(s.chatTextColor!)
+        : null;
+    final showTs = message.ts.isNotEmpty;
+    final mineName = myName == null || myName!.trim().isEmpty
+        ? 'You'
+        : myName!.trim();
+    final name = mine ? mineName : message.username;
+    final nameColor = mine
+        ? neon
+        : _senderColor(Theme.of(context).colorScheme);
+    final chatFont = s.chatFont.trim();
+    final chatFontSize = s.chatFontSize;
+
+    final line = Column(
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: nameColor,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ),
+            if (showTs) ...[
+              const SizedBox(width: 8),
+              Text(
+                message.ts,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: neon.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 2),
+        if (message.isMedia)
+          MediaContent(message: message)
+        else
+          MatrixNeonText(
+            text: message.text,
+            color: chatTextColor ?? neon,
+            fontSize: chatFontSize,
+            fontFamily: chatFont.isEmpty ? null : chatFont,
+          ),
+      ],
+    );
+
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: GestureDetector(
+        onLongPress: _hasMenu ? () => _showMenu(context) : null,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          child: line,
+        ),
+      ),
+    ).animate().fadeIn(duration: 200.ms).slideX(
+          begin: mine ? 0.5 : -0.5,
+          end: 0,
+          duration: 220.ms,
+          curve: Curves.easeOut,
+        );
+  }
 
   void _showMenu(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -389,5 +483,76 @@ class _SystemNotice extends StatelessWidget {
       hash = (hash * 31 + code) & 0x7fffffff;
     }
     return Color(kUserColorPalette[hash % kUserColorPalette.length]);
+  }
+}
+
+class MatrixNeonText extends StatefulWidget {
+  final String text;
+  final Color color;
+  final double fontSize;
+  final String? fontFamily;
+
+  const MatrixNeonText({
+    super.key,
+    required this.text,
+    required this.color,
+    this.fontSize = 15,
+    this.fontFamily,
+  });
+
+  @override
+  State<MatrixNeonText> createState() => _MatrixNeonTextState();
+}
+
+class _MatrixNeonTextState extends State<MatrixNeonText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        final fast = 0.5 + 0.5 * math.sin(t * 2 * math.pi * 23.0);
+        final slow = 0.7 + 0.3 * math.sin(t * 2 * math.pi * 2.4);
+        final opacity = (0.82 + 0.18 * slow * (0.6 + 0.4 * fast)).clamp(0.3, 1.0);
+        final glowA = (0.5 + 0.3 * fast).clamp(0.0, 1.0);
+        final glowB = (0.25 + 0.15 * slow).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: opacity,
+          child: Text(
+            widget.text,
+            style: TextStyle(
+              fontSize: widget.fontSize,
+              height: 1.3,
+              color: widget.color,
+              fontFamily: widget.fontFamily,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+              shadows: [
+                Shadow(
+                  color: widget.color.withValues(alpha: glowA),
+                  blurRadius: 6,
+                ),
+                Shadow(
+                  color: widget.color.withValues(alpha: glowB),
+                  blurRadius: 16,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

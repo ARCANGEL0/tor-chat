@@ -16,14 +16,12 @@ class ThemeTemplate {
 /// Bundled templates, in display order. Applying one keeps the user's
 /// wallpaper, avatar and non-appearance settings.
 final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
-  ThemeTemplate(
-    style: ThemeStyle.def,
-    settings: AppSettings.defaults().copy(),
-  ),
+  ThemeTemplate(style: ThemeStyle.def, settings: AppSettings.defaults().copy()),
   ThemeTemplate(
     style: ThemeStyle.midnight,
     settings: _palette(
       style: ThemeStyle.midnight,
+      font: 'Comfortaa',
       accentColor: 0xFF4A6CF7,
       background: 0xFF070B1C,
       chatBackground: 0xFF0A1028,
@@ -63,12 +61,16 @@ final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
     style: ThemeStyle.matrix,
     settings: _palette(
       style: ThemeStyle.matrix,
+      font: 'ShareTechMono',
       accentColor: 0xFF00FF41,
-      background: 0xFF020804,
+      logoColor: 0xFF00FF41,
+      headerText: 0xFF00FF41,
+      chatHeaderText: 0xFF00FF41,
+      background: 0xFF000000,
       chatBackground: 0xFF041008,
       bubbleMine: 0xFF003B1A,
       bubbleTheirs: 0xFF06230F,
-      headerColor: 0xFF04150A,
+      headerColor: 0xFF001105,
       chatHeader: 0xFF04150A,
       membersBackground: 0xFF04150A,
       membersHeader: 0xFFB7FFCB,
@@ -102,6 +104,7 @@ final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
     style: ThemeStyle.lain,
     settings: _palette(
       style: ThemeStyle.lain,
+      font: 'VT323',
       accentColor: 0xFFFF0066,
       background: 0xFF050508,
       chatBackground: 0xFF0B0912,
@@ -141,6 +144,7 @@ final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
     style: ThemeStyle.cyberpunk,
     settings: _palette(
       style: ThemeStyle.cyberpunk,
+      font: 'Orbitron',
       accentColor: 0xFFFCE300,
       background: 0xFF04050A,
       chatBackground: 0xFF080A12,
@@ -180,6 +184,7 @@ final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
     style: ThemeStyle.bladerunner,
     settings: _palette(
       style: ThemeStyle.bladerunner,
+      font: 'Michroma',
       accentColor: 0xFFFF2A6D,
       background: 0xFF0B0913,
       chatBackground: 0xFF0E0C17,
@@ -220,6 +225,9 @@ final List<ThemeTemplate> themeTemplates = <ThemeTemplate>[
 AppSettings _palette({
   required ThemeStyle style,
   required int accentColor,
+  int? logoColor,
+  int? headerText,
+  int? chatHeaderText,
   required int background,
   required int chatBackground,
   required int bubbleMine,
@@ -252,10 +260,15 @@ AppSettings _palette({
   required int kickIcon,
   required int kickButton,
   required int kickCancel,
+  String font = '',
 }) {
   final s = AppSettings.defaults().copy();
   s.themeStyle = style.id;
+  s.mainFont = font;
   s.accentColor = accentColor;
+  if (logoColor != null) s.logoColor = logoColor;
+  if (headerText != null) s.headerText = headerText;
+  if (chatHeaderText != null) s.chatHeaderText = chatHeaderText;
   s.background = background;
   s.chatBackground = chatBackground;
   s.bubbleMine = bubbleMine;

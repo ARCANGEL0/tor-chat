@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -7,6 +9,7 @@ import '../services/wallpaper_lib.dart';
 import '../state/chat_theme.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/chat_picture.dart';
 import 'chat_screen.dart';
@@ -368,6 +371,8 @@ class _ActionMenuState extends State<_ActionMenu> {
     final scheme = Theme.of(context).colorScheme;
     final style = ChatTheme.of(context).style;
 
+    if (style == ThemeStyle.matrix) return _buildMatrix();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -422,6 +427,145 @@ class _ActionMenuState extends State<_ActionMenu> {
                 ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMatrix() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (widget.open) ...[
+          _MatrixMenuItem(label: 'CREATE ROOM', onTap: widget.onCreate),
+          const SizedBox(height: 12),
+          _MatrixMenuItem(
+            label: 'CONNECT',
+            onTap: widget.onConnect,
+            delay: 80,
+          ),
+          const SizedBox(height: 16),
+        ],
+        _MatrixFab(open: widget.open, onToggle: widget.onToggle),
+      ],
+    );
+  }
+}
+
+class _MatrixMenuItem extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final int delay;
+
+  const _MatrixMenuItem({
+    required this.label,
+    required this.onTap,
+    this.delay = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const neon = Color(0xFF00FF41);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: neon,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              letterSpacing: 3,
+              shadows: [
+                Shadow(color: Color(0x9900FF41), blurRadius: 10),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 2,
+            height: 18,
+            decoration: BoxDecoration(
+              color: neon,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: const [
+                BoxShadow(color: Color(0xAA00FF41), blurRadius: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .slideX(
+          begin: 0.9,
+          end: 0,
+          duration: 340.ms,
+          delay: delay.ms,
+          curve: Curves.easeOutCubic,
+        )
+        .fadeIn(duration: 220.ms, delay: delay.ms);
+  }
+}
+
+class _MatrixFab extends StatelessWidget {
+  final bool open;
+  final VoidCallback onToggle;
+
+  const _MatrixFab({required this.open, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    const neon = Color(0xFF00FF41);
+    const red = Color(0xFFFF3B30);
+    final color = open ? red : neon;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: onToggle,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                open ? Icons.close : Icons.chat_bubble_outline_rounded,
+                key: ValueKey(open),
+                color: color,
+                size: 30,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: open ? 34 : 26,
+          height: 2.5,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.7), blurRadius: 8),
+            ],
           ),
         ),
       ],

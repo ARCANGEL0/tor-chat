@@ -10,6 +10,7 @@ import '../services/room_store.dart';
 import '../services/tor_engine.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/profile_avatar.dart';
@@ -260,6 +261,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final tc = ThemeController.instance;
     final scheme = Theme.of(context).colorScheme;
     final s = tc.settings;
+    final style =
+        ThemeStyle.fromId(s.themeStyle);
+    final fieldBorder = inputFieldBorder(style, 14);
+    final fieldFocused = inputFieldBorder(style, 14, width: 1.8);
+    final dropdownBorder = inputFieldBorder(style, 14);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -299,8 +305,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () => _saveName(_name.text),
                 ),
                 counterText: '',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: fieldBorder,
+                enabledBorder: fieldBorder,
+                focusedBorder: fieldFocused,
               ),
             ),
           ),
@@ -324,8 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () => _saveBio(_bio.text),
                 ),
                 counterText: '',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: fieldBorder,
+                enabledBorder: fieldBorder,
+                focusedBorder: fieldFocused,
               ),
             ),
           ),
@@ -411,9 +419,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 helperText:
                     'The built-in bridges shipped with Tor Browser, or your own',
                 prefixIcon: const Icon(Icons.lan_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                border: dropdownBorder,
+                enabledBorder: dropdownBorder,
+                focusedBorder: fieldFocused,
               ),
               items: [
                 for (final p in _bridgePresets)
@@ -444,8 +452,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'One bridge per line, e.g. obfs4 … or 1.2.3.4:443 '
                     'FINGERPRINT',
                 prefixIcon: const Icon(Icons.hub_outlined),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: fieldBorder,
+                enabledBorder: fieldBorder,
+                focusedBorder: fieldFocused,
               ),
               onChanged: (v) => tc.setBridges(bridges: v),
             ),
@@ -588,9 +597,13 @@ class _PortField extends StatelessWidget {
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(5),
           ],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             isDense: true,
-            border: OutlineInputBorder(),
+            border: inputFieldBorder(
+              ThemeStyle.fromId(ThemeController.instance.settings.themeStyle),
+              14,
+              width: 1.2,
+            ),
           ),
         ),
       ),
