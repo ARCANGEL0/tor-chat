@@ -14,13 +14,16 @@ import '../models/room.dart';
 import '../services/room_store.dart';
 import '../services/sound_service.dart';
 import '../services/wallpaper_lib.dart';
+import '../state/chat_theme.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/invite_sheet.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/profile_avatar.dart';
+import '../widgets/shape_box.dart';
 import 'chat_settings_screen.dart';
 import 'image_crop_screen.dart';
 import 'peer_profile_screen.dart';
@@ -667,87 +670,102 @@ class _ChatScreenState extends State<ChatScreen> {
                         fit: StackFit.expand,
                         children: [
                           Wallpaper(_effectiveWallpaper).background(context),
-                          ListenableBuilder(
-                            listenable: c,
-                            builder: (context, _) {
-                              _scrollToBottom();
-                              if (c.messages.isEmpty) {
-                                return _WelcomeBubble(
-                                  isHost: c.isHost,
-                                  connected: c.connected,
-                                  pendingApproval: c.pendingApproval,
-                                );
-                              }
-                              return ListView.builder(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 12),
-                                itemCount: c.messages.length,
-                                itemBuilder: (context, i) {
-                                  final msg = c.messages[i];
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 3),
-                                    child: MessageBubble(
-                                      message: msg,
-                                      myName: c.room?.username,
-                                      myAvatar: c.room?.avatar ??
-                                          ThemeController.instance.settings
-                                              .avatar,
-                                      theirAvatar:
-                                          c.members[msg.username]?.avatar,
-                                      onAvatarTap: (u) =>
-                                          _openPeerProfile(u),
-                                      onMyAvatarTap: _openMyProfile,
-                                      onCopy: () => _copyMessage(msg),
-                                      onEdit: () => _editMessage(msg),
-                                      onDelete: () => _deleteMessage(msg),
-                                    ),
+                          // Keep the last message above the floating composer.
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 92),
+                            child: ListenableBuilder(
+                              listenable: c,
+                              builder: (context, _) {
+                                _scrollToBottom();
+                                if (c.messages.isEmpty) {
+                                  return _WelcomeBubble(
+                                    isHost: c.isHost,
+                                    connected: c.connected,
+                                    pendingApproval: c.pendingApproval,
                                   );
-                                },
-                              );
-                            },
+                                }
+                                return ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 12),
+                                  itemCount: c.messages.length,
+                                  itemBuilder: (context, i) {
+                                    final msg = c.messages[i];
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 3),
+                                      child: MessageBubble(
+                                        message: msg,
+                                        myName: c.room?.username,
+                                        myAvatar: c.room?.avatar ??
+                                            ThemeController.instance.settings
+                                                .avatar,
+                                        theirAvatar:
+                                            c.members[msg.username]?.avatar,
+                                        onAvatarTap: (u) =>
+                                            _openPeerProfile(u),
+                                        onMyAvatarTap: _openMyProfile,
+                                        onCopy: () => _copyMessage(msg),
+                                        onEdit: () => _editMessage(msg),
+                                        onDelete: () => _deleteMessage(msg),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    if (c.isHost && c.pendingJoins.isNotEmpty)
-                      _PendingJoins(
-                        requests: c.pendingJoins,
-                        onApprove: c.approveJoin,
-                        onDeny: c.denyJoin,
-                      ),
-                    if (_sendingMedia) ...[
-                      if (_sendingLabel != null)
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                _sendingLabel!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const LinearProgressIndicator(minHeight: 2),
-                    ],
-                    _InputBar(
-                      controller: _inputController,
-                      canSend: _canSend,
-                      onSend: _send,
-                      onAttach: _attach,
-                      onStickers: _openStickers,
-                      enabled: c.connected || c.isHost,
-                      sending: _sendingMedia,
-                    ),
                   ],
+                ),
+                // Composer floats over the chat background.
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (c.isHost && c.pendingJoins.isNotEmpty)
+                        _PendingJoins(
+                          requests: c.pendingJoins,
+                          onApprove: c.approveJoin,
+                          onDeny: c.denyJoin,
+                        ),
+                      if (_sendingMedia) ...[
+                        if (_sendingLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _sendingLabel!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const LinearProgressIndicator(minHeight: 2),
+                      ],
+                      const SizedBox(height: 6),
+                      _InputBar(
+                        controller: _inputController,
+                        canSend: _canSend,
+                        onSend: _send,
+                        onAttach: _attach,
+                        onStickers: _openStickers,
+                        enabled: c.connected || c.isHost,
+                        sending: _sendingMedia,
+                      ),
+                    ],
+                  ),
                 ),
                 if (showConnectionOverlay)
                   _ConnectionOverlay(
@@ -873,6 +891,7 @@ class _ConnectionOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tc = ThemeController.instance;
+    final style = ChatTheme.of(context).style;
     final accent = Color(tc.settings.accentColor);
 
     // Show chat name if available, otherwise show first part of onion address
@@ -902,73 +921,74 @@ class _ConnectionOverlay extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Material(
-                  elevation: 24,
-                  borderRadius: BorderRadius.circular(28),
+                child: ShapeBox(
+                  shape: style.cardShape,
                   color: scheme.surfaceContainerHigh.withValues(alpha: 0.95),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: accent.withValues(alpha: 0.3),
-                        width: 1.5,
+                  borderColor: style.edgeColor ?? accent.withValues(alpha: 0.3),
+                  borderWidth: style.borderWidth > 0 ? style.borderWidth : 1.5,
+                  glowColor: style.glowColor,
+                  glowBlur: style.glowBlur,
+                  shadow: const BoxShadow(
+                    color: Colors.black54,
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Tor icon with pulse animation
+                      _PulsingTorIcon(color: accent),
+                      const SizedBox(height: 24),
+                      // Title
+                      Text(
+                        'Connecting to $displayName',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Tor icon with pulse animation
-                        _PulsingTorIcon(color: accent),
-                        const SizedBox(height: 24),
-                        // Title
-                        Text(
-                          'Connecting to $displayName',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: scheme.onSurface,
-                              ),
+                      const SizedBox(height: 12),
+                      // Subtitle
+                      Text(
+                        isHost
+                            ? 'Starting Tor hidden service…'
+                            : 'Establishing secure Tor connection…',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 24),
+                      // Animated progress indicator
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(accent),
                         ),
-                        const SizedBox(height: 12),
-                        // Subtitle
-                        Text(
-                          isHost
-                              ? 'Starting Tor hidden service…'
-                              : 'Establishing secure Tor connection…',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 24),
-                        // Animated progress indicator
-                        SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(accent),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Status text
-                        Text(
-                          'This may take up to a minute…',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                              ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Status text
+                      Text(
+                        'This may take up to a minute…',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1076,6 +1096,7 @@ class _InputBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final tc = ThemeController.instance;
     final s = tc.settings;
+    final style = ChatTheme.of(context).style;
     final chatFont =
         s.chatFont.trim().isEmpty ? null : s.chatFont;
     // Defaults are purple-tinted so the footer matches the app theme instead
@@ -1086,28 +1107,25 @@ class _InputBar extends StatelessWidget {
             scheme.primary.withValues(alpha: 0.35),
             scheme.surfaceContainer,
           );
-    final textareaColor = s.inputTextarea != null
-        ? Color(s.inputTextarea!)
-        : Color.alphaBlend(
-            scheme.primary.withValues(alpha: 0.20),
-            scheme.surfaceContainerHigh,
-          );
     final buttonColor = s.inputButton != null ? Color(s.inputButton!) : scheme.primary;
     final attachColor =
         s.inputAttach != null ? Color(s.inputAttach!) : scheme.primary;
-    return Container(
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
-        bottom: 8 + MediaQuery.of(context).viewInsets.bottom,
+    final edge = style.edgeColor;
+    final glow = style.glowColor;
+    // The whole message area in one container. Textarea has no fill on purpose.
+    return ShapeBox(
+      shape: style.inputShape,
+      color: barColor,
+      borderColor: edge != null ? edge.withValues(alpha: 0.4) : null,
+      borderWidth: style.borderWidth,
+      glowColor: glow,
+      glowBlur: style.glowBlur,
+      shadow: const BoxShadow(
+        color: Colors.black38,
+        blurRadius: 18,
+        offset: Offset(0, 6),
       ),
-      decoration: BoxDecoration(
-        color: barColor,
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.4)),
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -1116,16 +1134,18 @@ class _InputBar extends StatelessWidget {
             icon: const Icon(Icons.add_photo_alternate_outlined),
             color: attachColor,
             tooltip: 'Share media',
+            style: IconButton.styleFrom(shape: style.outlinedButtonShape),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
           // Sticker button
           IconButton(
             onPressed: sending || !enabled ? null : onStickers,
             icon: const Icon(Icons.emoji_emotions_outlined),
             color: attachColor,
             tooltip: 'Stickers',
+            style: IconButton.styleFrom(shape: style.outlinedButtonShape),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
           Expanded(
             child: TextField(
               controller: controller,
@@ -1141,54 +1161,41 @@ class _InputBar extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 hintText: enabled ? 'Message' : 'Connecting to onion service…',
-                filled: true,
-                fillColor: textareaColor,
                 isDense: true,
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 10,
+                  vertical: 9,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide.none,
-                ),
+                border: InputBorder.none,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           AnimatedScale(
             scale: canSend ? 1 : 0.85,
             duration: const Duration(milliseconds: 150),
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: Ink(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.lerp(buttonColor, Colors.white, 0.14) ??
-                          buttonColor,
-                      Color.lerp(buttonColor, Colors.black, 0.18) ??
-                          buttonColor,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: buttonColor.withValues(alpha: 0.5),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: canSend && !sending ? onSend : null,
+            child: ShapeBox(
+              shape: style.buttonShape,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.lerp(buttonColor, Colors.white, 0.14) ?? buttonColor,
+                  Color.lerp(buttonColor, Colors.black, 0.18) ?? buttonColor,
+                ],
+              ),
+              borderColor: edge != null ? edge.withValues(alpha: 0.6) : null,
+              borderWidth: style.borderWidth,
+              glowColor: style.glowColor ?? buttonColor.withValues(alpha: 0.35),
+              glowBlur: style.glowBlur > 0 ? style.glowBlur : 10,
+              child: InkWell(
+                customBorder: style.outlinedButtonShape,
+                onTap: canSend && !sending ? onSend : null,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
                   child: Icon(
                     Icons.send_rounded,
                     size: 20,
@@ -1315,22 +1322,22 @@ class _PendingJoinCardState extends State<_PendingJoinCard> {
             scale: visible ? 1 : 0.92,
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
-              decoration: BoxDecoration(
-                color: innerColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.45),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
+            child: ShapeBox(
+              shape: ChatTheme.of(context).style.cardShape,
+              color: innerColor,
+              borderColor: ChatTheme.of(context).style.edgeColor ??
+                  accent.withValues(alpha: 0.45),
+              borderWidth: ChatTheme.of(context).style.borderWidth > 0
+                  ? ChatTheme.of(context).style.borderWidth
+                  : 1,
+              glowColor: ChatTheme.of(context).style.glowColor,
+              glowBlur: ChatTheme.of(context).style.glowBlur,
+              shadow: const BoxShadow(
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: Offset(0, 3),
               ),
+              padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
               child: Row(
                 children: [
                   ProfileAvatar(
@@ -1474,8 +1481,16 @@ class _MembersPanel extends StatelessWidget {
     final hasWallpaper = s.membersWallpaper != null &&
         s.membersWallpaper!.isNotEmpty;
 
-    final radius =
-        const BorderRadius.horizontal(left: Radius.circular(20));
+    final cardShape = ChatTheme.of(context).style.cardShape;
+    // Drawer only shapes its left edge; the right is against the screen.
+    final panelShape = cardShape.isBeveled
+        ? cardShape
+        : SurfaceShape.rounded(
+            BorderRadius.only(
+              topLeft: cardShape.rounded.topLeft,
+              bottomLeft: cardShape.rounded.bottomLeft,
+            ),
+          );
     final content = Column(
       children: [
         Padding(
@@ -1577,11 +1592,18 @@ class _MembersPanel extends StatelessWidget {
       ],
     );
 
-    return Material(
-      color: Colors.transparent,
-      elevation: 12,
-      shape: RoundedRectangleBorder(borderRadius: radius),
-      clipBehavior: Clip.antiAlias,
+    return ShapeBox(
+      shape: panelShape,
+      color: bgColor,
+      borderColor: ChatTheme.of(context).style.edgeColor?.withValues(alpha: 0.35),
+      borderWidth: ChatTheme.of(context).style.borderWidth,
+      glowColor: ChatTheme.of(context).style.glowColor,
+      glowBlur: ChatTheme.of(context).style.glowBlur,
+      shadow: const BoxShadow(
+        color: Colors.black54,
+        blurRadius: 24,
+        offset: Offset(-8, 0),
+      ),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -1608,6 +1630,7 @@ class _KickCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tc = ThemeController.instance;
     final s = tc.settings;
+    final style = ChatTheme.of(context).style;
     final bg = s.kickBackground != null
         ? Color(s.kickBackground!)
         : const Color(0xFF2A1F4D);
@@ -1635,30 +1658,25 @@ class _KickCard extends StatelessWidget {
     final font = s.kickFont.trim();
     final size = s.kickFontSize;
     final textTheme = Theme.of(context).textTheme;
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 32),
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [bg, Color.lerp(bg, const Color(0xFF000000), 0.18)!],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: border.withValues(alpha: 0.45),
-            width: 1.2,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black54,
-              blurRadius: 26,
-              offset: Offset(0, 10),
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: ShapeBox(
+        shape: style.cardShape,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [bg, Color.lerp(bg, const Color(0xFF000000), 0.18)!],
         ),
+        borderColor: style.edgeColor ?? border.withValues(alpha: 0.45),
+        borderWidth: style.borderWidth > 0 ? style.borderWidth : 1.2,
+        glowColor: style.glowColor,
+        glowBlur: style.glowBlur,
+        shadow: const BoxShadow(
+          color: Colors.black54,
+          blurRadius: 26,
+          offset: Offset(0, 10),
+        ),
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

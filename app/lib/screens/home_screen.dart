@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../models/room.dart';
 import '../services/room_store.dart';
 import '../services/wallpaper_lib.dart';
+import '../state/chat_theme.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../widgets/app_logo.dart';
@@ -365,6 +366,7 @@ class _ActionMenuState extends State<_ActionMenu> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style = ChatTheme.of(context).style;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -411,6 +413,7 @@ class _ActionMenuState extends State<_ActionMenu> {
               key: ValueKey(widget.open),
               onPressed: widget.onToggle,
               backgroundColor: widget.open ? Colors.redAccent : scheme.primary,
+              shape: style.outlinedFabShape,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 child: Icon(
@@ -441,11 +444,12 @@ class _SpeedItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = ChatTheme.of(context).style;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: style.buttonShape.rippleRadius,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -466,10 +470,10 @@ class _SpeedItem extends StatelessWidget {
             const SizedBox(width: 8),
             Material(
               color: color,
-              shape: const CircleBorder(),
+              shape: style.outlinedButtonShape,
               elevation: 4,
               child: InkWell(
-                customBorder: const CircleBorder(),
+                customBorder: style.outlinedButtonShape,
                 onTap: onTap,
                 child: Padding(
                   padding: const EdgeInsets.all(14),

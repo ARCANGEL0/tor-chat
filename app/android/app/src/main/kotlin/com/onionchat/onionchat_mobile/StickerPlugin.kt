@@ -3,11 +3,11 @@ package com.onionchat.onionchat_mobile
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.io.File
 
 /** Sticker plugin for WhatsApp sticker import */
@@ -20,11 +20,11 @@ class StickerPlugin : MethodCallHandler {
     }
 
     companion object {
-        fun registerWith(registrar: Registrar) {
-            val plugin = StickerPlugin(registrar.context())
-            val channel = MethodChannel(registrar.messenger(), "com.onionchat.onionchat_mobile/stickers")
+        fun registerWith(flutterEngine: FlutterEngine, context: Context) {
+            val plugin = StickerPlugin(context)
+            val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.onionchat.onionchat_mobile/stickers")
             channel.setMethodCallHandler(plugin)
-            Log.d("StickerPlugin", "Registered with Registrar, context: ${registrar.context()}")
+            Log.d("StickerPlugin", "Registered with FlutterEngine, context: $context")
         }
     }
 

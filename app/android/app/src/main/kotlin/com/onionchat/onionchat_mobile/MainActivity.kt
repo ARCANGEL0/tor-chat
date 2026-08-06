@@ -15,7 +15,7 @@ class MainActivity : FlutterActivity() {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
         
         // Register StickerPlugin with v2 embedding
-        StickerPlugin.registerWith(flutterEngine)
+        StickerPlugin.registerWith(flutterEngine, applicationContext)
         
         // Tor background service channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, TOR_CHANNEL).setMethodCallHandler { call, result ->

@@ -7,6 +7,8 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../models/app_settings.dart';
 import '../state/theme_controller.dart';
+import '../state/theme_style.dart';
+import '../state/theme_templates.dart';
 import '../widgets/app_toast.dart';
 import 'wallpaper_picker_screen.dart';
 
@@ -196,6 +198,30 @@ class ThemeScreen extends StatelessWidget {
                       label: const Text('Export'),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const _SectionTitle('Templates'),
+              const SizedBox(height: 4),
+              Text(
+                'Ready-made looks that recolor AND reshape the whole app '
+                '(bubbles, input bar, buttons and cards).',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 16,
+                runSpacing: 18,
+                children: [
+                  for (final t in themeTemplates)
+                    _TemplateCard(
+                      template: t,
+                      selected: ThemeStyle.fromId(s.themeStyle) == t.style,
+                      onTap: () => tc.applyTemplate(t),
+                    ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -696,6 +722,86 @@ class ThemeScreen extends StatelessWidget {
 }
 
 const _canceled = Object();
+
+/// A circular preview thumbnail for one theme template. Tapping applies the
+/// template's colors and shape style.
+class _TemplateCard extends StatelessWidget {
+  final ThemeTemplate template;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TemplateCard({
+    required this.template,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 74,
+            height: 74,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? scheme.primary : Colors.transparent,
+                width: selected ? 3 : 1,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: 0.45),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                template.imageAsset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => ColoredBox(
+                  color: scheme.primary.withValues(alpha: 0.25),
+                  child: Icon(
+                    Icons.palette_outlined,
+                    color: scheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 88,
+            child: Text(
+              template.name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.15,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                color: selected
+                    ? scheme.primary
+                    : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ColorFieldSpec {
   final String label;

@@ -7,7 +7,9 @@ import 'services/sticker_service.dart';
 import 'state/chat_theme.dart';
 import 'state/room_controller.dart';
 import 'state/theme_controller.dart';
+import 'state/theme_style.dart';
 import 'widgets/tap_click_sound.dart';
+import 'widgets/theme_fx.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +87,8 @@ class _OnionChatAppState extends State<OnionChatApp>
     final mainFont = s.mainFont.trim();
     final fontSizeFactor =
         s.mainFontSize > 0 ? s.mainFontSize / 14.0 : 1.0;
+    final style = ThemeStyle.fromId(s.themeStyle);
+    final cardShape = style.cardShape.toShapeBorder();
 
     var theme = ThemeData(
       brightness: brightness,
@@ -99,8 +103,34 @@ class _OnionChatAppState extends State<OnionChatApp>
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
+      // Shape the whole app from the active theme template.
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        shape: style.outlinedFabShape,
+      ),
+      cardTheme: CardThemeData(
+        shape: cardShape,
+        elevation: 0,
+        clipBehavior: Clip.antiAlias,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(shape: style.outlinedButtonShape),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(shape: style.outlinedButtonShape),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(shape: style.outlinedButtonShape),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: style.inputShape.roundedOrTight,
+          borderSide: BorderSide.none,
+        ),
+      ),
       extensions: [
         ChatTheme(
+          style: style,
           myBubble: myBubble ?? const Color(0xFF8B5CF6),
           myBubbleText: myBubble != null ? onColor(myBubble) : Colors.white,
           theirBubble: theirBubble ?? const Color(0xFF2A1F4D),
@@ -138,7 +168,12 @@ class _OnionChatAppState extends State<OnionChatApp>
           home: const SplashScreen(),
           // Click sound only on interactive taps (buttons/tiles) — never on
           // scrolling or background taps.
-          builder: (context, child) => TapClickSound(child: child!),
+          builder: (context, child) => ThemeFX(
+            style: ThemeStyle.fromId(
+              ThemeController.instance.settings.themeStyle,
+            ),
+            child: TapClickSound(child: child!),
+          ),
           routes: {
             '/home': (_) => const HomeScreen(),
           },

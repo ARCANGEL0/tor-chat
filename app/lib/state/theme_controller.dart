@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
+import 'theme_style.dart';
+import 'theme_templates.dart';
 
 /// Owns the app-wide appearance: per-element colors, dark/light mode, chat
 /// wallpaper, profile picture and Tor ports. Persists everything in
@@ -52,6 +54,39 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> setThemeMode(String mode) async {
     settings = settings.copy()..themeMode = mode;
+    await _save();
+  }
+
+  /// Sets only the shape language (bubble/input/button/card styles) without
+  /// touching colors.
+  Future<void> setThemeStyle(ThemeStyle style) async {
+    settings = settings.copy()..themeStyle = style.id;
+    await _save();
+  }
+
+  /// Applies a full bundled template: its color palette and its shape style.
+  /// Non-appearance preferences (wallpapers, avatar, Tor ports, notifications,
+  /// bridges) are preserved.
+  Future<void> applyTemplate(ThemeTemplate template) async {
+    final cur = settings;
+    final app = template.settings;
+    settings = app.copy()
+      ..themeMode = cur.themeMode
+      ..globalWallpaper = cur.globalWallpaper
+      ..membersWallpaper = cur.membersWallpaper
+      ..mainWallpaper = cur.mainWallpaper
+      ..avatar = cur.avatar
+      ..bio = cur.bio
+      ..socksPort = cur.socksPort
+      ..controlPort = cur.controlPort
+      ..notificationsEnabled = cur.notificationsEnabled
+      ..notifSound = cur.notifSound
+      ..notifVibrate = cur.notifVibrate
+      ..soundClick = cur.soundClick
+      ..soundSend = cur.soundSend
+      ..soundReceive = cur.soundReceive
+      ..useBridges = cur.useBridges
+      ..bridges = cur.bridges;
     await _save();
   }
 
@@ -396,6 +431,9 @@ class ThemeController extends ChangeNotifier {
       final s = settings.copy();
       if (map['accent'] is int) s.accentColor = map['accent'] as int;
       if (map['themeMode'] is String) s.themeMode = map['themeMode'] as String;
+      if (map['themeStyle'] is String) {
+        s.themeStyle = ThemeStyle.fromId(map['themeStyle'] as String).id;
+      }
       s.globalWallpaper = map['wallpaper'] as String?;
       s.avatar = map['avatar'] as String?;
       s.headerColor = _intOrNull(map['header']);

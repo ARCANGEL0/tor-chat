@@ -7,6 +7,7 @@ import '../state/chat_theme.dart';
 import '../state/theme_controller.dart';
 import 'media_content.dart';
 import 'profile_avatar.dart';
+import 'shape_box.dart';
 
 /// A single chat line: system notices, sent messages (right) and received
 /// messages (left). Each message shows an avatar, the sender's username and a
@@ -67,76 +68,93 @@ class MessageBubble extends StatelessWidget {
         ? 'You'
         : myName!.trim();
     final name = mine ? mineName : message.username;
+    final style = chat.style;
+    final edge = style.edgeColor;
+    final glow = style.glowColor;
+    final gradient = style.gradientBubbles
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(bubbleColor, Colors.white, 0.16) ?? bubbleColor,
+              Color.lerp(bubbleColor, Colors.black, 0.20) ?? bubbleColor,
+            ],
+          )
+        : null;
 
-    final bubble = Container(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.72,
+    final bubble = ShapeBox(
+      shape: style.bubbleShapeFor(mine),
+      color: gradient == null ? bubbleColor : null,
+      gradient: gradient,
+      borderColor: edge?.withValues(alpha: 0.55),
+      borderWidth: style.borderWidth,
+      glowColor: glow,
+      glowBlur: style.glowBlur,
+      shadow: const BoxShadow(
+        color: Colors.black26,
+        blurRadius: 8,
+        offset: Offset(0, 2),
       ),
-      padding: const EdgeInsets.fromLTRB(13, 6, 13, 9),
-      decoration: BoxDecoration(
-        color: bubbleColor,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(16),
-          topRight: const Radius.circular(16),
-          bottomLeft: Radius.circular(mine ? 16 : 4),
-          bottomRight: Radius.circular(mine ? 4 : 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
         ),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: mine
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(13, 6, 13, 9),
+          child: Column(
+            crossAxisAlignment: mine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
             children: [
-              Flexible(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                    color: mine ? bubbleText : senderColor,
-                    letterSpacing: 0.2,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Flexible(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: mine ? bubbleText : senderColor,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
                   ),
-                ),
+                  if (showTs) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      message.ts,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: mine
+                            ? bubbleText.withValues(alpha: 0.75)
+                            : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              if (showTs) ...[
-                const SizedBox(width: 6),
+              const SizedBox(height: 3),
+              if (message.isMedia)
+                MediaContent(message: message)
+              else
                 Text(
-                  message.ts,
+                  message.text,
                   style: TextStyle(
-                    fontSize: 11.5,
-                    color: mine
-                        ? bubbleText.withValues(alpha: 0.75)
-                        : scheme.onSurfaceVariant,
+                    fontSize: chatFontSize,
+                    height: 1.3,
+                    color: chatTextColor ?? bubbleText,
+                    fontFamily: chatFont.isEmpty ? null : chatFont,
                   ),
                 ),
-              ],
             ],
           ),
-          const SizedBox(height: 3),
-          if (message.isMedia)
-            MediaContent(message: message)
-          else
-            Text(
-              message.text,
-              style: TextStyle(
-                fontSize: chatFontSize,
-                height: 1.3,
-                color: chatTextColor ?? bubbleText,
-                fontFamily: chatFont.isEmpty ? null : chatFont,
-              ),
-            ),
-        ],
+        ),
       ),
     );
 
@@ -266,6 +284,7 @@ class _SystemNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final tc = ThemeController.instance;
     final s = tc.settings;
+    final style = ChatTheme.of(context).style;
     final bg = s.noticeColor != null
         ? Color(s.noticeColor!)
         : const Color(0xFF2A1F4D);
@@ -283,10 +302,10 @@ class _SystemNotice extends StatelessWidget {
         presenceUser != null ? _userColor(presenceUser) : null;
 
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
-        decoration: BoxDecoration(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: ShapeBox(
+          shape: style.noticeShape,
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
@@ -296,22 +315,17 @@ class _SystemNotice extends StatelessWidget {
               bg.withValues(alpha: 0.9),
             ],
           ),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(6),
-            bottomLeft: Radius.circular(6),
-            bottomRight: Radius.circular(16),
+          borderColor: style.edgeColor ?? glow,
+          borderWidth: style.borderWidth > 0 ? style.borderWidth : 1,
+          glowColor: style.glowColor,
+          glowBlur: style.glowBlur,
+          shadow: BoxShadow(
+            color: glow.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          border: Border.all(color: glow, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: glow.withValues(alpha: 0.35),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
+          padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+          child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (dotColor != null) ...[
@@ -352,6 +366,7 @@ class _SystemNotice extends StatelessWidget {
             duration: 320.ms,
             curve: Curves.easeOutBack,
           ),
+      ),
     );
   }
 

@@ -11,6 +11,10 @@ class AppSettings {
   static const String modeLight = 'light';
   static const String modeDark = 'dark';
 
+  /// Selected theme template (see ThemeStyle ids). Drives the shape language
+  /// of the whole app (bubbles, input bar, buttons, cards).
+  String themeStyle;
+
   /// Primary/interactive color (buttons, toggles, highlights, FAB). Seeds the
   /// whole color scheme.
   int accentColor;
@@ -175,6 +179,7 @@ class AppSettings {
   AppSettings({
     required this.accentColor,
     required this.themeMode,
+    this.themeStyle = 'default',
     this.globalWallpaper,
     this.avatar,
     this.bio,
@@ -333,6 +338,7 @@ this.mainFont = '',
   AppSettings copy() => AppSettings(
         accentColor: accentColor,
         themeMode: themeMode,
+        themeStyle: themeStyle,
         globalWallpaper: globalWallpaper,
         avatar: avatar,
         bio: bio,
@@ -426,6 +432,7 @@ this.mainFont = '',
   Map<String, dynamic> appearanceJson() => {
         'accent': accentColor,
         'themeMode': themeMode,
+        'themeStyle': themeStyle,
         'wallpaper': globalWallpaper,
         'avatar': avatar,
         'header': headerColor,
@@ -506,6 +513,7 @@ this.mainFont = '',
   Map<String, dynamic> toJson() => {
         'accentColor': accentColor,
         'themeMode': themeMode,
+        'themeStyle': themeStyle,
         'globalWallpaper': globalWallpaper,
         'avatar': avatar,
         'bio': bio,
@@ -598,6 +606,7 @@ this.mainFont = '',
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
         accentColor: json['accentColor'] as int? ?? defaultAccent,
         themeMode: json['themeMode'] as String? ?? modeDark,
+        themeStyle: json['themeStyle'] as String? ?? 'default',
         globalWallpaper: json['globalWallpaper'] as String?,
         avatar: json['avatar'] as String?,
         bio: json['bio'] as String?,
