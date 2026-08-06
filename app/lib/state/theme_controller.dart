@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
-import 'theme_style.dart';
-import 'theme_templates.dart';
+import '../themes/theme_style.dart';
+import '../themes/theme_template.dart';
 
 /// Owns the app-wide appearance: per-element colors, dark/light mode, chat
 /// wallpaper, profile picture and Tor ports. Persists everything in

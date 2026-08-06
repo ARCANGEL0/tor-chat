@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 
 /// Whole-app CRT effect for scanline/glitch themes (Lain). Subtle scanlines
 /// plus the occasional RGB tear bar on top of everything. Decorative only,

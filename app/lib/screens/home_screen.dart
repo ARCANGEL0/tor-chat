@@ -9,7 +9,7 @@ import '../services/wallpaper_lib.dart';
 import '../state/chat_theme.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/chat_picture.dart';
 import 'chat_screen.dart';

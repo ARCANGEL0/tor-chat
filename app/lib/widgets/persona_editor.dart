@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/avatar_picker_screen.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import 'profile_avatar.dart';
 
 /// A combined "who am I" editor: a tappable profile picture (opens the picker),

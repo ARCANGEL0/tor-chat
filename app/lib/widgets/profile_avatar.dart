@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../services/app_assets.dart';
+import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
 
-/// Circular avatar that shows a profile picture when available, otherwise a
-/// colored circle with the user's initial (used for remote users whose picture
-/// isn't known over the protocol).
 class ProfileAvatar extends StatelessWidget {
   final String? avatar;
   final String initial;
@@ -24,42 +23,51 @@ class ProfileAvatar extends StatelessWidget {
     final bg = color ?? Theme.of(context).colorScheme.primary;
     final initial = this.initial.trim();
     final hasImage = avatar != null && avatar!.isNotEmpty;
+    final isLain =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle) ==
+            ThemeStyle.lain;
+    final radius = BorderRadius.circular(size * 0.22);
+    final shape = isLain ? BoxShape.rectangle : BoxShape.circle;
 
     Widget child;
     if (hasImage) {
-      child = ClipOval(
-        child: Image(
-          image: AppAssets.avatarProvider(avatar),
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.low,
-          gaplessPlayback: true,
-          errorBuilder: (_, _, _) => _fallback(bg, initial),
-        ),
+      final image = Image(
+        image: AppAssets.avatarProvider(avatar),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.low,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _fallback(bg, initial, shape, radius),
       );
+      child = isLain
+          ? ClipRRect(borderRadius: radius, child: image)
+          : ClipOval(child: image);
     } else {
-      child = _fallback(bg, initial);
+      child = _fallback(bg, initial, shape, radius);
     }
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        shape: shape,
+        borderRadius: isLain ? radius : null,
         boxShadow: [BoxShadow(color: bg.withValues(alpha: 0.3), blurRadius: 5)],
       ),
       child: child,
     );
   }
 
-  Widget _fallback(Color bg, String initial) {
+  Widget _fallback(
+      Color bg, String initial, BoxShape shape, BorderRadius radius) {
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        shape: shape,
+        borderRadius: shape == BoxShape.rectangle ? radius : null,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

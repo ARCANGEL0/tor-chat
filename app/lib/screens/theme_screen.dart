@@ -7,8 +7,9 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../models/app_settings.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
-import '../state/theme_templates.dart';
+import '../themes/theme_style.dart';
+import '../themes/theme_template.dart';
+import '../themes/theme_templates.dart';
 import '../widgets/app_toast.dart';
 import 'wallpaper_picker_screen.dart';
 

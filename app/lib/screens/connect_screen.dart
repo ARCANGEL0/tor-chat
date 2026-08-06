@@ -6,7 +6,7 @@ import '../models/room.dart';
 import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import '../widgets/persona_editor.dart';
 import '../widgets/tor_progress_card.dart';
 import '../services/tor_engine.dart';

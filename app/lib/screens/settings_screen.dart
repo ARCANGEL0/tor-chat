@@ -10,7 +10,7 @@ import '../services/room_store.dart';
 import '../services/tor_engine.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/profile_avatar.dart';

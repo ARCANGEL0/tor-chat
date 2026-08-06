@@ -7,7 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../models/app_settings.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import 'home_screen.dart';
 

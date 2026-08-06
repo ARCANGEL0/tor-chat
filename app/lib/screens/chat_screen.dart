@@ -18,7 +18,7 @@ import '../services/wallpaper_lib.dart';
 import '../state/chat_theme.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/invite_sheet.dart';

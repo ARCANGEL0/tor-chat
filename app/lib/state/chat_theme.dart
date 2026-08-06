@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'theme_style.dart';
+import '../themes/theme_style.dart';
 
 /// Chat-specific colors (message bubbles) exposed through the theme so the
 /// user can restyle them independently of the Material scheme. Also carries the

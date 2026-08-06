@@ -7,7 +7,7 @@ import '../models/chat_message.dart';
 import '../services/chat_protocol.dart';
 import '../state/chat_theme.dart';
 import '../state/theme_controller.dart';
-import '../state/theme_style.dart';
+import '../themes/theme_style.dart';
 import 'media_content.dart';
 import 'profile_avatar.dart';
 import 'shape_box.dart';
@@ -285,16 +285,55 @@ class MessageBubble extends StatelessWidget {
       ],
     );
 
+    final senderColor = _senderColor(Theme.of(context).colorScheme);
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!mine) ...[
+          InkWell(
+            onTap: onAvatarTap == null
+                ? null
+                : () => onAvatarTap!(message.username),
+            customBorder: const CircleBorder(),
+            child: ProfileAvatar(
+              avatar: theirAvatar,
+              initial: _initialOf(message.username),
+              size: 34,
+              color: senderColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.7,
+            ),
+            child: line,
+          ),
+        ),
+        if (mine) ...[
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: onMyAvatarTap,
+            customBorder: const CircleBorder(),
+            child: ProfileAvatar(
+              avatar: myAvatar,
+              initial: 'You',
+              size: 34,
+              color: senderColor,
+            ),
+          ),
+        ],
+      ],
+    );
+
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
         onLongPress: _hasMenu ? () => _showMenu(context) : null,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.85,
-          ),
-          child: line,
-        ),
+        child: row,
       ),
     ).animate().fadeIn(duration: 200.ms).slideX(
           begin: mine ? 0.5 : -0.5,
